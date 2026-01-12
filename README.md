@@ -34,8 +34,7 @@
 
 ---
 
-## 2. 快速开始（适用于初学者）
-**支持 Windows、Linux 、WSL 和 macOS**
+## 2. 快速开始（**支持 Windows、Linux 、WSL 和 macOS**）
 
 ### 1️⃣ 克隆项目
 （确保你已安装 `git`，如果未安装请参考➡️[安装git教程](./安装git教程.md)）
