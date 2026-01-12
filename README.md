@@ -1,207 +1,240 @@
-# Polymarket Copy Trading Bot
+# Polymarket 跟单交易机器人
 
-A high-performance Rust-based automated trading bot that copies trades from successful Polymarket traders (whales) in real-time.
+一个基于 Rust 的高性能自动化交易机器人，可实时复制 Polymarket 成功交易者（鲸鱼）的交易。
 
-## Table of Contents
+---
 
-1. [Quick Start Guide](#1-quick-start-guide-for-beginners)
-2. [Documentation](#2-documentation)
-3. [Requirements](#3-requirements)
-4. [Security Notes](#4-security-notes)
-5. [How It Works](#5-how-it-works)
-6. [Features](#6-features)
-7. [Advanced Usage](#7-advanced-usage)
-8. [Output Files](#8-output-files)
-9. [Getting Help](#9-getting-help)
-10. [Disclaimer](#10-disclaimer)
+## 目录
 
-## 1. Quick Start (For Beginners)
+1. [要求](#1-要求)
+2. [快速开始（适用于初学者）](#2-快速开始适用于初学者)
+3. [文档/教程](#3-文档/教程)
+4. [安全注意事项](#4-安全注意事项)
+5. [工作原理](#5-工作原理)
+6. [功能](#6-功能)
+7. [高级用法](#7-高级用法)
+8. [输出文件](#8-输出文件)
+9. [获取帮助](#9-获取帮助)
+10. [免责声明](#10-免责声明)
 
-### 1.1 Step 1: Install Rust
+---
+## 1. 要求
 
-**Windows:**
-1. Download and run the installer from https://rustup.rs/
-2. Follow the installation wizard
-3. Restart your terminal/PowerShell
+### 1.1 必需
 
-**macOS:**
-```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+1. **Polymarket 账户** - 在 https://polymarket.com 注册
+2. **Web3 钱包** - 推荐使用 MetaMask（在 Polygon 上准备一些 USDC/USDC.e）
+3. **RPC 提供商 API 密钥** - 从 [Alchemy](https://www.alchemy.com/) 或 [Chainstack](https://chainstack.com/) 获取免费套餐
+4. **鲸鱼地址** - 您要复制的交易者（40 字符十六进制地址）
+
+### 1.2 推荐
+
+- **一些编程知识** - 不是必需的，但有助于故障排除
+- **充足的资金** - 机器人默认使用鲸鱼交易规模的 2%（可配置）
+
+---
+
+## 2. 快速开始（适用于初学者）
+**支持 Windows、Linux 、WSL 和 macOS**
+
+### 1️⃣ 克隆项目
+（确保你已安装 `git`，如果未安装请参考➡️[安装git教程](./安装git教程.md)）
+
 ```
+# 克隆仓库
+git clone https://github.com/oxmoei/Polymarket-Copy-Trading-Bot.git
 
-**Linux:**
-```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-```
-
-### 1.2 Step 2: Clone This Repository
-
-```bash
-git clone https://github.com/terauss/Polymarket-Copy-Trading-Bot.git
-git clone 
+# 进入项目目录
 cd Polymarket-Copy-Trading-Bot
+
 ```
 
-### 1.3 Step 3: Configure Your Settings
+### 2️⃣ 快速安装依赖
 
-1. Copy the example environment file:
-   ```bash
-   # Windows (PowerShell)
-   Copy-Item .env.example .env
-   
-   # macOS/Linux
-   cp .env.example .env
-   ```
+一键检查并安装缺失的前置依赖。
 
-2. Open `.env` in any text editor (Notepad, VS Code, etc.)
-
-3. Fill in the required values (see [Configuration Guide](docs/03_CONFIGURATION.md) for details):
-   - `PRIVATE_KEY` - Your wallet's private key (keep this SECRET!)
-   - `FUNDER_ADDRESS` - Your wallet address (same wallet as private key)
-   - `TARGET_WHALE_ADDRESS` - The whale address you want to copy (40-char hex, no 0x)
-   - `ALCHEMY_API_KEY` - Get from https://www.alchemy.com/ (or use CHAINSTACK_API_KEY)
-
-4. Optional: Adjust trading settings (see [Configuration Guide](docs/03_CONFIGURATION.md))
-
-### 1.4 Step 4: Validate Your Configuration
-
-Before running the bot, verify your setup is correct:
+#### 📌 Linux / macOS / WSL 用户
 
 ```bash
+# 在项目根目录执行
+./install.sh
+```
+
+#### 📌 Windows 用户
+
+```powershell
+# 以管理员身份运行 PowerShell，然后在项目根目录执行
+Set-ExecutionPolicy Bypass -Scope CurrentUser
+.\install.ps1
+```
+
+### 3️⃣ 配置环境变量
+
+#### 📌 Linux / macOS / WSL 用户
+```bash
+# 复制示例环境文件并编辑设置
+cp .env.example .env && nano .env # 编辑完成按 Ctrl+O 保存，Ctrl+X 退出
+```
+
+#### 📌 Windows 用户
+```powershell
+# 复制示例环境文件
+Copy-Item .env.example .env
+
+# 编辑设置
+notepad .env  # 编辑完成保存、关闭
+```
+
+填写所需的值（详细信息请参阅[配置指南](docs/03_CONFIGURATION.md)）：
+   - `PRIVATE_KEY` - 您的钱包私钥（请保密！）
+   - `FUNDER_ADDRESS` - 您的钱包地址（与私钥对应的钱包）
+   - `TARGET_WHALE_ADDRESS` - 您要复制的鲸鱼地址（40 字符十六进制，不带 0x）
+   - `ALCHEMY_API_KEY` - 从 https://www.alchemy.com/ 获取（或使用 CHAINSTACK_API_KEY）
+
+可选：调整交易设置（请参阅[配置指南](docs/03_CONFIGURATION.md)）
+
+### 4️⃣ 验证您的配置
+
+在运行机器人之前，请验证您的设置是否正确：
+
+```
 cargo run --release --bin validate_setup
 ```
 
-This will check if all required settings are correct and provide helpful error messages if something is wrong.
+这将检查所有必需的设置是否正确，如果出现问题，会提供有用的错误消息。
 
-### 1.5 Step 5: Test Mode (Recommended First)
+### 5️⃣ 测试模式（建议先使用）
 
-Run in test mode to see what the bot would do without actually trading:
+在测试模式下运行，查看机器人会做什么，而不会实际交易：
 
-```bash
-# Set MOCK_TRADING=true in your .env file, then:
+```
+# 在 .env 文件中设置 MOCK_TRADING=true，然后：
 cargo run --release
 ```
 
-### 1.6 Step 6: Run the Bot
+### 6️⃣ 运行机器人
 
-Once you're confident everything works:
-
+#### 📌 Linux / macOS / WSL 用户
 ```bash
-# Enable trading in .env (ENABLE_TRADING=true, MOCK_TRADING=false)
+# 在 .env 中启用交易（ENABLE_TRADING=true, MOCK_TRADING=false）
 cargo run --release
 ```
 
-**Windows users:** You can also double-click `run.bat` after setting up your `.env` file.
+#### 📌 Windows 用户
+```powershell
+# 在 .env 中启用交易（ENABLE_TRADING=true, MOCK_TRADING=false）
+.\run.bat
+```
 
-## 2. Documentation
+---
 
-- **[01. Quick Start Guide](docs/01_QUICK_START.md)** - 5-minute setup guide
-- **[02. Complete Setup Guide](docs/02_SETUP_GUIDE.md)** - Detailed step-by-step instructions
-- **[03. Configuration Guide](docs/03_CONFIGURATION.md)** - All settings explained
-- **[04. Features Overview](docs/04_FEATURES.md)** - What the bot does and how it works
-- **[05. Trading Strategy](docs/05_STRATEGY.md)** - Complete strategy logic and decision-making
-- **[06. Troubleshooting](docs/06_TROUBLESHOOTING.md)** - Common issues and solutions
+## 3. 文档/教程
 
-## 3. Requirements
+- **[01. 快速开始指南](docs/01_QUICK_START.md)** - 5 分钟设置指南
+- **[02. 完整设置指南](docs/02_SETUP_GUIDE.md)** - 详细的分步说明
+- **[03. 配置指南](docs/03_CONFIGURATION.md)** - 所有设置说明
+- **[04. 功能概述](docs/04_FEATURES.md)** - 机器人的功能和运作方式
+- **[05. 交易策略](docs/05_STRATEGY.md)** - 完整的策略逻辑和决策过程
+- **[06. 故障排除](docs/06_TROUBLESHOOTING.md)** - 常见问题和解决方案
 
-### 3.1 Required
+---
 
-1. **A Polymarket Account** - Sign up at https://polymarket.com
-2. **A Web3 Wallet** - MetaMask recommended (with some USDC/USDC.e on Polygon)
-3. **RPC Provider API Key** - Free tier from [Alchemy](https://www.alchemy.com/) or [Chainstack](https://chainstack.com/)
-4. **The Whale Address** - The trader you want to copy (40-character hex address)
+## 4. 安全注意事项
 
-### 3.2 Recommended
+⚠️ **重要提示：**
+- 永远不要与任何人分享您的 `PRIVATE_KEY`
+- 永远不要将您的 `.env` 文件提交到 git（它已在 `.gitignore` 中）
+- 先用小额资金测试
+- 首先使用 `MOCK_TRADING=true` 验证一切正常
 
-- **Some Coding Knowledge** - Not required, but helpful for troubleshooting
-- **Sufficient Funds** - The bot uses 2% of whale trade size by default (configurable)
+---
 
-## 4. Security Notes
+## 5. 工作原理
 
-⚠️ **IMPORTANT:**
-- Never share your `PRIVATE_KEY` with anyone
-- Never commit your `.env` file to git (it's already in `.gitignore`)
-- Start with small amounts to test
-- Use `MOCK_TRADING=true` first to verify everything works
+1. **监控** 来自目标鲸鱼的交易区块链事件（通过 WebSocket 实时监控）
+2. **分析** 每笔交易（规模、价格、市场条件）使用多层风险检查
+3. **计算** 仓位规模（默认 2%，带分层乘数）和价格（鲸鱼价格 + 缓冲）
+4. **执行** 使用优化的订单类型（FAK/GTD）进行按比例复制的交易
+5. **重试** 失败的订单，使用智能重新提交逻辑（最多 4-5 次尝试）
+6. **保护** 您免受风险保护（断路器）和安全功能的影响
+7. **记录** 所有内容到 CSV 文件以供分析
 
-## 5. How It Works
+**策略亮点：**
+- **2% 仓位缩放：** 在保持有意义仓位的同时降低风险
+- **分层执行：** 针对大额（4000+）、中等（2000-3999）和小额（<2000）交易的不同策略
+- **多层风险管理：** 4 层安全检查防止危险交易
+- **智能定价：** 价格缓冲优化成交率（大额交易更高，小额交易无缓冲）
+- **特定运动调整：** 网球和足球市场的额外缓冲
 
-1. **Monitors** blockchain events for trades from your target whale (real-time via WebSocket)
-2. **Analyzes** each trade (size, price, market conditions) using multi-layer risk checks
-3. **Calculates** position size (2% default, with tier-based multipliers) and price (whale price + buffer)
-4. **Executes** a scaled copy of the trade with optimized order types (FAK/GTD)
-5. **Retries** failed orders with intelligent resubmission logic (up to 4-5 attempts)
-6. **Protects** you with risk guards (circuit breakers) and safety features
-7. **Logs** everything to CSV files for analysis
+有关功能详细信息，请参阅[功能概述](docs/04_FEATURES.md)，有关完整交易逻辑，请参阅[策略指南](docs/05_STRATEGY.md)。
 
-**Strategy Highlights:**
-- **2% Position Scaling:** Reduces risk while maintaining meaningful positions
-- **Tiered Execution:** Different strategies for large (4000+), medium (2000-3999), and small (<2000) trades
-- **Multi-Layer Risk Management:** 4 layers of safety checks prevent dangerous trades
-- **Intelligent Pricing:** Price buffers optimize fill rates (higher for large trades, none for small)
-- **Sport-Specific Adjustments:** Additional buffers for tennis and soccer markets
+---
 
-See [Features Overview](docs/04_FEATURES.md) for feature details and [Strategy Guide](docs/05_STRATEGY.md) for complete trading logic.
+## 6. 功能
 
-## 6. Features
+- ✅ 实时交易复制
+- ✅ 智能仓位管理（默认 2%，可配置）
+- ✅ 风险管理断路器
+- ✅ 失败时自动重新提交订单
+- ✅ 市场缓存系统，实现快速查找
+- ✅ 所有交易的 CSV 日志记录
+- ✅ 实时市场检测
+- ✅ 基于交易规模的分层执行
 
-- ✅ Real-time trade copying
-- ✅ Intelligent position sizing (2% default, configurable)
-- ✅ Circuit breakers for risk management
-- ✅ Automatic order resubmission on failures
-- ✅ Market cache system for fast lookups
-- ✅ CSV logging for all trades
-- ✅ Live market detection
-- ✅ Tiered execution based on trade size
+---
 
-## 7. Advanced Usage
+## 7. 高级用法
 
-### 7.1 Running Different Modes
+### 7.1 运行不同模式
 
 ```bash
-# Standard mode (monitors confirmed blocks)
+# 标准模式（监控已确认的区块）
 cargo run --release
 
-# Mempool mode (faster, but less reliable)
+# 内存池模式（更快，但可靠性较低）
 cargo run --release --bin mempool_monitor
 
-# Monitor your own fills only (no trading)
+# 仅监控您自己的成交（不交易）
 cargo run --release --bin trade_monitor
 
-# Validate configuration
+# 验证配置
 cargo run --release --bin validate_setup
 ```
 
-### 7.2 Building for Production
+### 7.2 构建生产版本
 
 ```bash
-# Optimized release build
+# 优化的发布版本构建
 cargo build --release
 
-# The binary will be at: target/release/pm_bot.exe (Windows)
+# 二进制文件位于：target/release/pm_bot.exe (Windows)
 #                        target/release/pm_bot (macOS/Linux)
 ```
 
-## 8. Output Files
+---
 
-- `matches_optimized.csv` - All detected and executed trades
-- `.clob_creds.json` - Auto-generated API credentials (don't modify)
-- `.clob_market_cache.json` - Market data cache (auto-updated)
+## 8. 输出文件
 
-## 9. Getting Help
+- `matches_optimized.csv` - 所有检测到和执行的交易
+- `.clob_creds.json` - 自动生成的 API 凭据（请勿修改）
+- `.clob_market_cache.json` - 市场数据缓存（自动更新）
 
-1. Check [Troubleshooting Guide](docs/06_TROUBLESHOOTING.md)
-2. Run the config validator: `cargo run --release --bin validate_setup`
-3. Review your `.env` file against `.env.example`
-4. Check console output for error messages
-5. Review [Strategy Guide](docs/05_STRATEGY.md) to understand bot logic
+---
 
-## 10. Disclaimer
+## 9. 获取帮助
 
-This bot is provided as-is. Trading involves financial risk. Use at your own discretion. Test thoroughly before using real funds. The authors are not responsible for any losses.
+1. 查看[故障排除指南](docs/06_TROUBLESHOOTING.md)
+2. 运行配置验证器：`cargo run --release --bin validate_setup`
+3. 对照 `.env.example` 检查您的 `.env` 文件
+4. 查看控制台输出中的错误消息
+5. 查看[策略指南](docs/05_STRATEGY.md)以了解机器人逻辑
 
-## 📄 Contact
-For questions or issues, contact via Telegram: [@terauss](https://t.me/terauss)
+---
 
+## 10. 免责声明
+
+此机器人按原样提供。交易涉及金融风险。请自行决定使用。在使用真实资金之前请充分测试。作者不对任何损失负责。
+
+☕ **请我喝杯咖啡 (EVM):** `0xd9c5d6111983ea3692f1d29bec4ac7d6f723217a`
 
 

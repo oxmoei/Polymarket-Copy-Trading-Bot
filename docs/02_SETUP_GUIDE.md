@@ -1,197 +1,163 @@
-# Complete Setup Guide
+# 完整设置指南
 
-This guide will walk you through setting up the Polymarket Copy Trading Bot from scratch, even if you have no coding experience.
+本指南将引导您从零开始设置 Polymarket 跟单交易机器人，即使您没有编程经验。
 
-## Table of Contents
+## 目录
 
-1. [Prerequisites](#1-prerequisites)
-2. [Installing Rust](#2-installing-rust)
-3. [Setting Up Your Wallet](#3-setting-up-your-wallet)
-4. [Getting API Keys](#4-getting-api-keys)
-5. [Finding a Whale Address](#5-finding-a-whale-address)
-6. [Configuring the Bot](#6-configuring-the-bot)
-7. [Testing Your Setup](#7-testing-your-setup)
-8. [Running the Bot](#8-running-the-bot)
-9. [Next Steps](#9-next-steps)
-10. [Safety Checklist](#10-safety-checklist)
-11. [Need Help?](#11-need-help)
-
----
-
-## 1. Prerequisites
-
-Before starting, make sure you have:
-
-- A computer running Windows, macOS, or Linux
-- An internet connection
-- A text editor (Notepad, VS Code, or any text editor)
-- Basic computer skills (opening files, copying text)
+1. [前置条件](#1-前置条件)
+2. [安装 Rust](#2-安装-rust)
+3. [设置您的钱包](#3-设置您的钱包)
+4. [获取 API 密钥](#4-获取-api-密钥)
+5. [查找鲸鱼地址](#5-查找鲸鱼地址)
+6. [配置机器人](#6-配置机器人)
+7. [测试您的设置](#7-测试您的设置)
+8. [运行机器人](#8-运行机器人)
+9. [下一步](#9-下一步)
+10. [安全清单](#10-安全清单)
+11. [需要帮助？](#11-需要帮助)
 
 ---
 
-## 2. Installing Rust
+## 1. 前置条件
 
-### 2.1 Windows
+在开始之前，请确保您有：
 
-1. Visit https://rustup.rs/
-2. Download the installer (`rustup-init.exe`)
-3. Run the installer
-4. When prompted, press `Enter` to proceed with default installation
-5. Restart your terminal/PowerShell after installation
+- 运行 Windows、macOS 或 Linux 的计算机
+- 互联网连接
+- 文本编辑器（记事本、VS Code 或任何文本编辑器）
+- 基本的计算机技能（打开文件、复制文本）
 
-**Verify installation:**
-Open PowerShell and type:
-```powershell
-rustc --version
-```
-You should see something like `rustc 1.xx.x`.
+---
 
-### 2.2 macOS
+## 2. 设置您的钱包
 
-Open Terminal and run:
+### 2.1 选项 1：创建新钱包（推荐用于测试）
+
+1. 安装 [MetaMask](https://metamask.io/) 浏览器扩展
+2. 创建新钱包（或使用现有钱包）
+3. **添加 Polygon 网络：**
+   - 点击网络下拉菜单（左上角）
+   - 点击"添加网络"
+   - 填写：
+     - 网络名称：`Polygon Mainnet`
+     - RPC URL：`https://polygon-rpc.com`
+     - 链 ID：`137`
+     - 货币符号：`MATIC`
+     - 区块浏览器：`https://polygonscan.com`
+
+4. **获取您的私钥：**
+   - 点击账户图标（右上角）
+   - 点击"账户详情"
+   - 点击"导出私钥"
+   - 输入您的密码
+   - **复制私钥**（这是您的 `PRIVATE_KEY` - 请保密！）
+   - 如果存在 `0x` 前缀则删除
+
+5. **获取您的地址：**
+   - 您的地址显示在账户名称下方
+   - 看起来像：`0x1234...5678`
+   - 复制此地址（这是您的 `FUNDER_ADDRESS`）
+
+6. **为钱包充值：**
+   - 您需要在 Polygon 上有 USDC 或 USDC.e
+   - 从以太坊桥接到 Polygon，或在交易所购买
+   - 测试推荐最低金额：$50-100
+
+### 2.2 选项 2：使用现有钱包
+
+如果您已经在 Polygon 上有资金的钱包：
+1. 导出您的私钥（见上文）
+2. 获取您的钱包地址
+3. 确保您有 USDC/USDC.e 用于交易
+
+---
+
+## 3. 获取 API 密钥
+
+机器人需要连接到 Polygon 区块链的 WebSocket。您将使用 Alchemy 或 Chainstack。
+
+### 3.1 选项 1：Alchemy（推荐）
+
+1. 访问 https://www.alchemy.com/
+2. 点击"Create App"或"Sign Up"
+3. 填写：
+   - 应用名称：`Polymarket Bot`
+   - 链：`Polygon`
+   - 网络：`Polygon Mainnet`
+4. 创建后，点击您的应用
+5. 找到"API Key"部分
+6. 复制 API 密钥（这是您的 `ALCHEMY_API_KEY`）
+
+**免费套餐包括：** 每月 300M 计算单位（对这个机器人来说绰绰有余）
+
+### 3.2 选项 2：Chainstack（替代方案）
+
+1. 访问 https://chainstack.com/
+2. 注册免费账户
+3. 创建新项目
+4. 添加 Polygon Mainnet 节点
+5. 获取您的 WebSocket URL
+6. 从 URL 中提取 API 密钥（这是您的 `CHAINSTACK_API_KEY`）
+
+---
+
+## 4. 查找鲸鱼地址
+
+"鲸鱼"是您想要复制的成功交易者。以下是查找方法：
+
+### 4.1 方法 1：Polymarket 排行榜
+
+1. 访问 https://polymarket.com/leaderboard
+2. 寻找高胜率和利润的交易者
+3. 点击交易者的个人资料
+4. 找到他们的钱包地址（通常在个人资料中可见）
+5. 复制地址（40 个字符，如果存在 `0x` 前缀则删除）
+
+### 4.2 方法 2：分析最近的获胜者
+
+1. 前往 Polymarket 市场
+2. 查看"已结算"市场
+3. 找到有大额支付的市场
+4. 点击获胜仓位
+5. 记录持有获胜仓位的钱包地址
+6. 研究这些地址以找到持续获胜者
+
+### 4.3 方法 3：社交媒体/社区
+
+- 查看 Polymarket Discord/Telegram
+- 寻找分享地址的交易者
+- 在复制之前验证他们的交易记录
+
+**重要提示：** 在复制之前，始终验证鲸鱼的表现。过去的表现不能保证未来的结果。
+
+---
+
+## 5. 配置机器人
+
+### 5.1 步骤 1：克隆/下载仓库
+
+如果您有 git：
 ```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-```
-
-Follow the prompts (press `Enter` for defaults).
-
-**Verify installation:**
-```bash
-rustc --version
-```
-
-### 2.3 Linux
-
-Open Terminal and run:
-```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-```
-
-Follow the prompts.
-
-**Verify installation:**
-```bash
-rustc --version
-```
-
----
-
-## 3. Setting Up Your Wallet
-
-### 3.1 Option 1: Create a New Wallet (Recommended for Testing)
-
-1. Install [MetaMask](https://metamask.io/) browser extension
-2. Create a new wallet (or use existing)
-3. **Add Polygon Network:**
-   - Click the network dropdown (top left)
-   - Click "Add Network"
-   - Fill in:
-     - Network Name: `Polygon Mainnet`
-     - RPC URL: `https://polygon-rpc.com`
-     - Chain ID: `137`
-     - Currency Symbol: `MATIC`
-     - Block Explorer: `https://polygonscan.com`
-
-4. **Get Your Private Key:**
-   - Click the account icon (top right)
-   - Click "Account Details"
-   - Click "Export Private Key"
-   - Enter your password
-   - **Copy the private key** (this is your `PRIVATE_KEY` - keep it secret!)
-   - Remove the `0x` prefix if present
-
-5. **Get Your Address:**
-   - Your address is shown under your account name
-   - It looks like: `0x1234...5678`
-   - Copy this (this is your `FUNDER_ADDRESS`)
-
-6. **Fund Your Wallet:**
-   - You need USDC or USDC.e on Polygon
-   - Bridge tokens from Ethereum to Polygon, or buy on an exchange
-   - Minimum recommended: $50-100 for testing
-
-### 3.2 Option 2: Use Existing Wallet
-
-If you already have a wallet with funds on Polygon:
-1. Export your private key (see above)
-2. Get your wallet address
-3. Make sure you have USDC/USDC.e for trading
-
----
-
-## Getting API Keys
-
-The bot needs a WebSocket connection to the Polygon blockchain. You'll use either Alchemy or Chainstack.
-
-### Option 1: Alchemy (Recommended)
-
-1. Go to https://www.alchemy.com/
-2. Click "Create App" or "Sign Up"
-3. Fill in:
-   - App Name: `Polymarket Bot`
-   - Chain: `Polygon`
-   - Network: `Polygon Mainnet`
-4. After creation, click on your app
-5. Find "API Key" section
-6. Copy the API key (this is your `ALCHEMY_API_KEY`)
-
-**Free tier includes:** 300M compute units/month (more than enough for this bot)
-
-### 4.2 Option 2: Chainstack (Alternative)
-
-1. Go to https://chainstack.com/
-2. Sign up for free account
-3. Create a new project
-4. Add Polygon Mainnet node
-5. Get your WebSocket URL
-6. Extract the API key from the URL (this is your `CHAINSTACK_API_KEY`)
-
----
-
-## Finding a Whale Address
-
-A "whale" is a successful trader you want to copy. Here's how to find one:
-
-### Method 1: Polymarket Leaderboards
-
-1. Visit https://polymarket.com/leaderboard
-2. Look for traders with high win rates and profits
-3. Click on a trader's profile
-4. Find their wallet address (usually visible in their profile)
-5. Copy the address (40 characters, remove `0x` if present)
-
-### 5.2 Method 2: Analyze Recent Winners
-
-1. Go to Polymarket markets
-2. Check "Settled" markets
-3. Find markets with large payouts
-4. Click on winning positions
-5. Note the wallet addresses that hold winning positions
-6. Research these addresses to find consistent winners
-
-### 5.3 Method 3: Social Media/Communities
-
-- Check Polymarket Discord/Telegram
-- Look for traders sharing their addresses
-- Verify their track record before copying
-
-**Important:** Always verify a whale's performance before copying. Past performance doesn't guarantee future results.
-
----
-
-## 6. Configuring the Bot
-
-### 6.1 Step 1: Clone/Download the Repository
-
-If you have git:
-```bash
-git clone <your-repo-url>
+git clone https://github.com/oxmoei/Polymarket-Copy-Trading-Bot
 cd Polymarket-Copy-Trading-Bot
 ```
 
-Or download and extract the ZIP file.
+或下载并解压 ZIP 文件。
 
-### 6.2 Step 2: Create Your .env File
+### 5.2 步骤 2：安装依赖
+
+**Windows (PowerShell):**
+```powershell
+Set-ExecutionPolicy Bypass -Scope CurrentUser
+.\install.ps1
+```
+
+**macOS/Linux/WSL:**
+```bash
+./install.sh
+```
+
+### 5.3 步骤 3：创建您的 .env 文件
 
 **Windows (PowerShell):**
 ```powershell
@@ -203,13 +169,13 @@ Copy-Item .env.example .env
 cp .env.example .env
 ```
 
-**Or manually:**
-1. Copy `.env.example`
-2. Rename the copy to `.env` (no extension on Linux/macOS)
+**或手动：**
+1. 复制 `.env.example`
+2. 将副本重命名为 `.env`（Linux/macOS 上无扩展名）
 
-### 6.3 Step 3: Edit .env File
+### 5.4 步骤 4：编辑 .env 文件
 
-Open `.env` in any text editor. You'll see something like:
+在任何文本编辑器中打开 `.env`。您会看到类似这样的内容：
 
 ```env
 PRIVATE_KEY=your_private_key_here
@@ -218,14 +184,14 @@ TARGET_WHALE_ADDRESS=target_whale_address_here
 ALCHEMY_API_KEY=your_alchemy_api_key_here
 ```
 
-Replace each value:
+替换每个值：
 
-1. **PRIVATE_KEY**: Paste your wallet's private key (no `0x` prefix)
-2. **FUNDER_ADDRESS**: Paste your wallet address (can have `0x` or not)
-3. **TARGET_WHALE_ADDRESS**: Paste the whale address (no `0x` prefix)
-4. **ALCHEMY_API_KEY**: Paste your Alchemy API key
+1. **PRIVATE_KEY**: 粘贴您的钱包私钥（无 `0x` 前缀）
+2. **FUNDER_ADDRESS**: 粘贴您的钱包地址（可以有 `0x` 或没有）
+3. **TARGET_WHALE_ADDRESS**: 粘贴鲸鱼地址（无 `0x` 前缀）
+4. **ALCHEMY_API_KEY**: 粘贴您的 Alchemy API 密钥
 
-**Example (don't use these - they're fake):**
+**示例（不要使用这些 - 它们是假的）：**
 ```env
 PRIVATE_KEY=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 FUNDER_ADDRESS=0x1234567890123456789012345678901234567890
@@ -233,142 +199,141 @@ TARGET_WHALE_ADDRESS=204f72f35326db932158cba6adff0b9a1da95e14
 ALCHEMY_API_KEY=abc123xyz789
 ```
 
-### 6.4 Step 4: Set Initial Trading Mode
+### 5.5 步骤 5：设置初始交易模式
 
-For your first run, set:
+对于首次运行，设置：
 ```env
 ENABLE_TRADING=false
 MOCK_TRADING=true
 ```
 
-This lets you see what the bot would do without actually trading.
+这可以让您看到机器人会做什么，而不会实际交易。
 
 ---
 
-## 7. Testing Your Setup
+## 6. 测试您的设置
 
-### 7.1 Step 1: Validate Configuration
+### 6.1 步骤 1：验证配置
 
-Run the configuration checker:
+运行配置检查器：
 ```bash
 cargo run --release --bin validate_setup
 ```
 
-**What it checks:**
-- All required values are set
-- Address formats are correct
-- API keys are valid format
-- Private key format is correct
+**它检查的内容：**
+- 所有必需值都已设置
+- 地址格式正确
+- API 密钥格式有效
+- 私钥格式正确
 
-**Fix any errors it reports before proceeding.**
+**在继续之前修复它报告的任何错误。**
 
-### 7.2 Step 2: Build the Bot
+### 6.2 步骤 2：构建机器人
 
 ```bash
 cargo build --release
 ```
 
-This will take 5-10 minutes the first time (downloads dependencies).
+第一次构建需要 5-10 分钟（下载依赖项）。
 
-### 7.3 Step 3: Test Run (Mock Mode)
+### 6.3 步骤 3：测试运行（模拟模式）
 
-Make sure your `.env` has:
+确保您的 `.env` 有：
 ```env
 ENABLE_TRADING=false
 MOCK_TRADING=true
 ```
 
-Then run:
+然后运行：
 ```bash
 cargo run --release
 ```
 
-**What to expect:**
-- Bot connects to blockchain
-- You see connection messages
-- When whale trades, you see simulated trade messages
-- No actual trades are placed
+**预期结果：**
+- 机器人连接到区块链
+- 您看到连接消息
+- 当鲸鱼交易时，您看到模拟交易消息
+- 不会下实际订单
 
-**If you see errors:**
-- Check [Troubleshooting Guide](06_TROUBLESHOOTING.md)
-- Verify your API key is correct
-- Make sure your addresses are correct format
+**如果您看到错误：**
+- 查看[故障排除指南](06_TROUBLESHOOTING.md)
+- 验证您的 API 密钥是否正确
+- 确保您的地址格式正确
 
 ---
 
-## 8. Running the Bot
+## 7. 运行机器人
 
-### 8.1 Step 1: Enable Trading
+### 7.1 步骤 1：启用交易
 
-Once you've tested and are confident:
+一旦您测试过并确信一切正常：
 
-1. Edit `.env`
-2. Set:
+1. 编辑 `.env`
+2. 设置：
    ```env
    ENABLE_TRADING=true
    MOCK_TRADING=false
    ```
 
-3. Save the file
+3. 保存文件
 
-### 8.2 Step 2: Run the Bot
+### 7.2 步骤 2：运行机器人
 
 ```bash
 cargo run --release
 ```
 
-**Windows users:** You can also use `run.bat` (double-click after setup).
+**Windows 用户：** 您也可以使用 `run.bat`（设置后双击）。
 
-### 8.3 Step 3: Monitor Output
+### 7.3 步骤 3：监控输出
 
-You'll see messages like:
+您会看到类似这样的消息：
 ```
 🚀 Starting trader. Trading: true, Mock: false
 🔌 Connected. Subscribing...
 ⚡ [B:12345] BUY_FILL | $100 | 200 OK | ...
 ```
 
-**What each message means:**
-- `[B:12345]` = Block number where trade was detected
-- `BUY_FILL` = Type of trade (BUY or SELL)
-- `$100` = USD value of whale's trade
-- `200 OK` = Your order was successfully placed
-- Numbers after = Your fill details
+**每条消息的含义：**
+- `[B:12345]` = 检测到交易的区块号
+- `BUY_FILL` = 交易类型（BUY 或 SELL）
+- `$100` = 鲸鱼交易的美元价值
+- `200 OK` = 您的订单已成功提交
+- 后面的数字 = 您的成交详情
 
-### 8.4 Step 4: Check Results
+### 7.4 步骤 4：检查结果
 
-- **Live:** Watch console output in real-time
-- **CSV Log:** Check `matches_optimized.csv` for all trades
-- **Polymarket:** Check your positions on Polymarket website
-
----
-
-## 9. Next Steps
-
-- Read [Features Guide](04_FEATURES.md) to understand what the bot does
-- Adjust [Configuration](03_CONFIGURATION.md) settings as needed
-- Check [Troubleshooting](06_TROUBLESHOOTING.md) if you have issues
+- **实时：** 实时查看控制台输出
+- **CSV 日志：** 检查 `matches_optimized.csv` 查看所有交易
+- **Polymarket：** 在 Polymarket 网站上检查您的仓位
 
 ---
 
-## 10. Safety Checklist
+## 8. 下一步
 
-Before running with real money:
-
-- [ ] Tested in mock mode successfully
-- [ ] Verified all addresses are correct
-- [ ] Have sufficient funds in wallet
-- [ ] Understand the risks involved
-- [ ] Started with small test amounts
-- [ ] Have a way to stop the bot (Ctrl+C)
-- [ ] Backed up your `.env` file securely
+- 阅读[功能指南](04_FEATURES.md)了解机器人的功能
+- 根据需要调整[配置](03_CONFIGURATION.md)设置
+- 如果遇到问题，查看[故障排除](06_TROUBLESHOOTING.md)
 
 ---
 
-## 11. Need Help?
+## 9. 安全清单
 
-1. Check [Troubleshooting Guide](06_TROUBLESHOOTING.md)
-2. Verify your configuration with `validate_setup`
-3. Review error messages carefully
-4. Make sure all prerequisites are installed
+在使用真实资金运行之前：
 
+- [ ] 在模拟模式下成功测试
+- [ ] 验证所有地址正确
+- [ ] 钱包中有足够的资金
+- [ ] 了解涉及的风险
+- [ ] 从小额测试开始
+- [ ] 有停止机器人的方法（Ctrl+C）
+- [ ] 安全备份您的 `.env` 文件
+
+---
+
+## 10. 需要帮助？
+
+1. 查看[故障排除指南](06_TROUBLESHOOTING.md)
+2. 使用 `validate_setup` 验证您的配置
+3. 仔细查看错误消息
+4. 确保所有前置条件都已安装

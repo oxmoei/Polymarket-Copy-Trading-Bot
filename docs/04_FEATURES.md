@@ -1,348 +1,347 @@
-# Features Overview
+# 功能概述
 
-This document explains what the Polymarket Copy Trading Bot does and how it works.
+本文档解释了 Polymarket 跟单交易机器人的功能和运作方式。
 
-## Table of Contents
+## 目录
 
-1. [Overview](#1-overview)
-2. [Core Features](#2-core-features)
-3. [Trading Flow](#3-trading-flow-step-by-step)
-4. [Performance Characteristics](#4-performance-characteristics)
-5. [Limitations](#5-limitations)
-6. [Safety Features](#6-safety-features-summary)
-7. [Understanding Output](#7-understanding-the-output)
-8. [Next Steps](#8-next-steps)
+1. [概述](#1-概述)
+2. [核心功能](#2-核心功能)
+3. [交易流程](#3-交易流程逐步说明)
+4. [性能特征](#4-性能特征)
+5. [限制](#5-限制)
+6. [安全功能](#6-安全功能摘要)
+7. [理解输出](#7-理解输出)
+8. [下一步](#8-下一步)
 
-## 1. Overview
+## 1. 概述
 
-### 1.1 What This Bot Does
+### 1.1 这个机器人做什么
 
-The bot monitors blockchain events for trades made by a specific "whale" (successful trader) on Polymarket and automatically copies those trades with scaled-down position sizes.
+机器人监控特定"鲸鱼"（成功交易者）在 Polymarket 上进行的交易的区块链事件，并自动以按比例缩小的仓位规模复制这些交易。
 
-**Key Strategy Points:**
-- **2% Position Scaling:** Copies trades at 2% of whale's size (configurable)
-- **Tiered Execution:** Different strategies based on trade size (4000+, 2000+, 1000+, <1000)
-- **Risk Guards:** Multi-layer safety system prevents dangerous trades
-- **Intelligent Pricing:** Price buffers optimize fill rates while minimizing slippage
-- **Automatic Retries:** Resubmission logic maximizes fill rates
+**关键策略要点：**
+- **2% 仓位缩放：** 以鲸鱼规模的 2% 复制交易（可配置）
+- **分层执行：** 基于交易规模的不同策略（4000+、2000+、1000+、<1000）
+- **风险保护：** 多层安全系统防止危险交易
+- **智能定价：** 价格缓冲优化成交率，同时最小化滑点
+- **自动重试：** 重新提交逻辑最大化成交率
 
-For complete strategy details, see [Trading Strategy Guide](05_STRATEGY.md).
+有关完整策略详情，请参阅[交易策略指南](05_STRATEGY.md)。
 
-## 2. Core Features
+## 2. 核心功能
 
-### 2.1 Real-Time Trade Detection
+### 2.1 实时交易检测
 
-- **WebSocket Connection:** Connects to Polygon blockchain via WebSocket for real-time event monitoring
-- **Event Filtering:** Only processes trades from your target whale address
-- **Blockchain Events:** Monitors `OrdersFilled` events from Polymarket's order book contracts
+- **WebSocket 连接：** 通过 WebSocket 连接到 Polygon 区块链进行实时事件监控
+- **事件过滤：** 仅处理来自目标鲸鱼地址的交易
+- **区块链事件：** 监控来自 Polymarket 订单簿合约的 `OrdersFilled` 事件
 
-**How it works:**
-1. Bot subscribes to blockchain logs
-2. Filters for trades from target whale address
-3. Parses trade details (token, size, price, side)
-4. Queues trade for processing
-
----
-
-### 2.2 Intelligent Position Sizing
-
-The bot doesn't copy trades at 1:1 size. Instead, it uses scaled positions:
-
-- **Default Scaling:** 2% of whale's position size
-- **Minimum Size:** Orders below $1.01 USD are skipped (prevents dust)
-- **Probabilistic Sizing:** Very small positions may be probabilistically executed or skipped
-
-**Example:**
-- Whale buys 10,000 shares at $0.50 = $5,000
-- Bot buys 200 shares at $0.50 = $100 (2% of $5,000)
-
-**Why scaling:**
-- Reduces risk exposure
-- Allows copying whales with larger accounts
-- Prevents position size issues if whale uses full account
+**工作原理：**
+1. 机器人订阅区块链日志
+2. 过滤来自目标鲸鱼地址的交易
+3. 解析交易详情（代币、规模、价格、方向）
+4. 将交易加入处理队列
 
 ---
 
-### 2.3 Tiered Execution Strategy
+### 2.2 智能仓位管理
 
-Different trade sizes get different execution strategies:
+机器人不会以 1:1 的规模复制交易。相反，它使用按比例缩小的仓位：
 
-| Trade Size (Shares) | Price Buffer | Size Multiplier | Strategy |
-|---------------------|--------------|-----------------|----------|
-| 4000+ (Large)       | +0.01        | 1.25x           | Aggressive |
-| 2000-3999 (Medium)  | +0.01        | 1.0x            | Standard |
-| 1000-1999 (Small)   | +0.00        | 1.0x            | Conservative |
-| <1000 (Very Small)  | +0.00        | 1.0x            | Conservative |
+- **默认缩放：** 鲸鱼仓位规模的 2%
+- **最小规模：** 低于 $1.01 USD 的订单被跳过（防止灰尘订单）
+- **概率性规模：** 非常小的仓位可能概率性执行或跳过
 
-**Price Buffer:** Additional amount paid above whale's price (improves fill rate)  
-**Size Multiplier:** Your position size relative to whale (1.25x = 25% larger than normal scaling)
+**示例：**
+- 鲸鱼以 $0.50 买入 10,000 股 = $5,000
+- 机器人以 $0.50 买入 200 股 = $100（$5,000 的 2%）
 
-**Large trades (4000+ shares):**
-- More aggressive (higher buffer, larger size)
-- More resubmit attempts if order fails
-- Price chasing on first retry
-
-**Small trades (<1000 shares):**
-- More conservative (no buffer)
-- Fewer resubmit attempts
-- No price chasing
+**为什么缩放：**
+- 降低风险敞口
+- 允许复制账户更大的鲸鱼
+- 如果鲸鱼使用全部账户，防止仓位规模问题
 
 ---
 
-### 2.4 Order Types
+### 2.3 分层执行策略
 
-The bot uses different order types based on trade characteristics:
+不同的交易规模获得不同的执行策略：
 
-**FAK (Fill and Kill):**
-- Executes immediately or cancels
-- Used for buy orders (most trades)
-- Fast execution, no order book placement
+| 交易规模（股数） | 价格缓冲 | 规模乘数 | 策略 |
+|------------------|----------|----------|------|
+| 4000+（大额）    | +0.01    | 1.25x    | 激进 |
+| 2000-3999（中等）| +0.01    | 1.0x     | 标准 |
+| 1000-1999（小额）| +0.00    | 1.0x     | 保守 |
+| <1000（非常小）  | +0.00    | 1.0x     | 保守 |
 
-**GTD (Good Till Date):**
-- Places order on book with expiration
-- Used for:
-  - Sell orders (all sells)
-  - Final retry attempt on failed buys
-- Expires after:
-  - 61 seconds for live markets
-  - 1800 seconds (30 min) for non-live markets
+**价格缓冲：** 在鲸鱼价格之上支付的额外金额（提高成交率）  
+**规模乘数：** 您的仓位规模相对于鲸鱼（1.25x = 比正常缩放大 25%）
 
----
+**大额交易（4000+ 股）：**
+- 更激进（更高缓冲，更大规模）
+- 如果订单失败，更多重新提交尝试
+- 第一次重试时价格追逐
 
-### 2.5 Automatic Order Resubmission
-
-If an order fails to fill completely:
-
-**Retry Logic:**
-- Up to 4-5 attempts (depending on trade size)
-- Price escalation on first retry for large trades
-- Exponential backoff delays for small trades
-
-**Example Flow:**
-1. Initial order fails (FAK)
-2. Retry #1: Same price or +0.01 (if large trade)
-3. Retry #2-4: Same price (flat retries)
-4. Final attempt: GTD order (stays on book)
-
-**Why this helps:**
-- Market conditions change quickly
-- Improves fill rate on volatile markets
-- Balances speed vs. execution quality
+**小额交易（<1000 股）：**
+- 更保守（无缓冲）
+- 更少的重新提交尝试
+- 无价格追逐
 
 ---
 
-### 2.6 Risk Management (Circuit Breaker Protection)
+### 2.4 订单类型
 
-Protects you from copying trades in dangerous conditions:
+机器人根据交易特征使用不同的订单类型：
 
-**Triggers:**
-- Multiple large trades in short time window
-- Low order book depth (thin liquidity)
-- Rapid-fire trading patterns
+**FAK（Fill and Kill）：**
+- 立即执行或取消
+- 用于买单（大多数交易）
+- 快速执行，不放在订单簿上
 
-**Actions:**
-- Blocks trades for specified duration (default: 2 minutes)
-- Checks order book depth before allowing trades
-- Prevents copying during potential manipulation
-
-**Configuration:**
-- `CB_LARGE_TRADE_SHARES`: Minimum size to trigger (default: 1500)
-- `CB_CONSECUTIVE_TRIGGER`: Number of trades to trigger (default: 2)
-- `CB_SEQUENCE_WINDOW_SECS`: Time window (default: 30 seconds)
-- `CB_MIN_DEPTH_USD`: Minimum liquidity required (default: $200)
-- `CB_TRIP_DURATION_SECS`: Block duration (default: 120 seconds)
+**GTD（Good Till Date）：**
+- 在订单簿上放置订单并设置过期时间
+- 用于：
+  - 卖单（所有卖单）
+  - 失败买单的最终重试尝试
+- 过期时间：
+  - 实时市场 61 秒
+  - 非实时市场 1800 秒（30 分钟）
 
 ---
 
-### 2.7 Market Cache System
+### 2.5 自动订单重新提交
 
-**Purpose:** Fast lookups without API delays
+如果订单未能完全成交：
 
-**Cached Data:**
-- Market information (token IDs, slugs)
-- Live/non-live status
-- Sport-specific market data (ATP, Ligue 1)
+**重试逻辑：**
+- 最多 4-5 次尝试（取决于交易规模）
+- 大额交易第一次重试时价格升级
+- 小额交易的指数退避延迟
 
-**Refresh:** Automatically updated in background (periodic refresh)
+**示例流程：**
+1. 初始订单失败（FAK）
+2. 重试 #1：相同价格或 +0.01（如果是大额交易）
+3. 重试 #2-4：相同价格（平重试）
+4. 最终尝试：GTD 订单（留在订单簿上）
 
-**Benefits:**
-- Faster execution (no API wait times)
-- Reduces API rate limits
-- More reliable (less dependent on external APIs)
-
----
-
-### 2.8 Sport-Specific Optimizations
-
-**ATP Markets:**
-- Additional +0.01 price buffer
-- Optimized for tennis market characteristics
-
-**Ligue 1 Markets:**
-- Additional +0.01 price buffer
-- Optimized for soccer market characteristics
-
-**Other Markets:**
-- Standard execution strategy
-- No additional buffers
-
-**Automatic Detection:** Bot automatically detects market type and applies appropriate strategy.
+**为什么这有帮助：**
+- 市场条件快速变化
+- 在波动市场中提高成交率
+- 平衡速度与执行质量
 
 ---
 
-### 2.9 Comprehensive Logging
+### 2.6 风险管理（断路器保护）
 
-**Console Output:**
-- Real-time trade information
-- Color-coded status messages
-- Fill percentages
-- Market conditions
+保护您免受在危险条件下复制交易的风险：
 
-**CSV Logging:**
-- File: `matches_optimized.csv`
-- All trades logged with timestamps
-- Includes: block number, token ID, USD value, shares, price, direction, status, order book data, transaction hash, live status
+**触发条件：**
+- 短时间内多次大额交易
+- 低订单簿深度（流动性薄）
+- 快速交易模式
 
-**Use Cases:**
-- Performance analysis
-- Debugging
-- Audit trail
-- Post-trade analysis
+**操作：**
+- 在指定时长内阻止交易（默认：2 分钟）
+- 在允许交易之前检查订单簿深度
+- 防止在潜在操纵期间复制
 
----
-
-### 2.10 Live Market Detection
-
-**Automatic Detection:**
-- Checks if market is "live" (event currently happening)
-- Different expiration times for live vs. non-live markets
-- Faster execution for live markets
-
-**Impact:**
-- Live markets: 61-second GTD expiration (faster)
-- Non-live: 30-minute GTD expiration (more patient)
+**配置：**
+- `CB_LARGE_TRADE_SHARES`：触发的最小规模（默认：1500）
+- `CB_CONSECUTIVE_TRIGGER`：触发所需的交易数量（默认：2）
+- `CB_SEQUENCE_WINDOW_SECS`：时间窗口（默认：30 秒）
+- `CB_MIN_DEPTH_USD`：所需的最小流动性（默认：$200）
+- `CB_TRIP_DURATION_SECS`：阻止时长（默认：120 秒）
 
 ---
 
-## 3. Trading Flow (Step-by-Step)
+### 2.7 市场缓存系统
 
-This is a simplified overview. For complete detailed logic, see [Strategy Guide](05_STRATEGY.md).
+**目的：** 快速查找，无 API 延迟
 
-1. **Detection:** Whale makes trade on Polymarket
-2. **Event Received:** Bot receives blockchain event via WebSocket (<1 second latency)
-3. **Parsing:** Bot extracts trade details (token, size, price, side)
-4. **Filtering:** 
-   - Check if trade is from target whale (skip if not)
-   - Check if trade size is large enough (skip if too small, <10 shares)
-5. **Risk Guard Check:** Multi-layer safety system checks:
-   - Layer 1: Fast check (trade size, sequence detection)
-   - Layer 2: Order book depth analysis (if triggered)
-   - Layer 3: Trip status check
-   - Result: Block trade if dangerous conditions detected
-6. **Position Sizing:** Calculate your order size:
-   - Base: 2% of whale's size
-   - Apply tier multiplier (1.25x for 4000+, 1.0x otherwise)
-   - Check minimum size ($1.01 requirement)
-   - Probabilistic execution for very small positions
-7. **Price Calculation:** Determine limit price:
-   - Get base buffer from tier (0.01 for large, 0.00 for small)
-   - Add sport-specific buffers (tennis/soccer: +0.01)
-   - Calculate: whale_price + total_buffer
-   - Clamp to valid range (0.01-0.99)
-8. **Order Type Selection:** 
-   - SELL orders: Always GTD
-   - BUY orders: FAK initially, GTD on final retry
-9. **Order Creation:** Create signed order with calculated parameters
-10. **Submission:** Submit order to Polymarket API
-11. **Result Handling:**
-    - Success: Check fill amount, resubmit if partial
-    - Failure: Enter resubmission loop (4-5 attempts)
-    - Final attempt: Switch to GTD order if still not filled
-12. **Logging:** Record all details to CSV and console with color-coded status
+**缓存数据：**
+- 市场信息（代币 ID、slug）
+- 实时/非实时状态
+- 特定运动市场数据（ATP、Ligue 1）
+
+**刷新：** 在后台自动更新（定期刷新）
+
+**好处：**
+- 更快执行（无 API 等待时间）
+- 减少 API 速率限制
+- 更可靠（较少依赖外部 API）
 
 ---
 
-## 4. Performance Characteristics
+### 2.8 特定运动优化
 
-**Latency:**
-- Event detection: <1 second (blockchain dependent)
-- Order processing: <100ms
-- Total time to order: <2 seconds from whale trade
+**ATP 市场：**
+- 额外 +0.01 价格缓冲
+- 针对网球市场特征优化
 
-**Throughput:**
-- Handles multiple concurrent trades
-- Queued processing for high-frequency scenarios
-- Automatic backpressure handling
+**Ligue 1 市场：**
+- 额外 +0.01 价格缓冲
+- 针对足球市场特征优化
 
-**Reliability:**
-- Automatic reconnection on WebSocket failures
-- Retry logic for failed orders
-- Circuit breakers prevent bad trades
-- Error handling throughout
+**其他市场：**
+- 标准执行策略
+- 无额外缓冲
+
+**自动检测：** 机器人自动检测市场类型并应用适当的策略。
 
 ---
 
-## 5. Limitations
+### 2.9 全面日志记录
 
-**What the bot does NOT do:**
-- ❌ Market analysis or prediction
-- ❌ Stop-loss or take-profit orders
-- ❌ Portfolio management
-- ❌ Position monitoring after fill
-- ❌ Exit strategy (you manage closing positions)
-- ❌ Multiple whale copying (one whale at a time)
+**控制台输出：**
+- 实时交易信息
+- 彩色编码状态消息
+- 成交百分比
+- 市场条件
 
-**What you need to do manually:**
-- Monitor your positions
-- Close positions when appropriate
-- Manage your portfolio
-- Adjust risk parameters
-- Find good whales to copy
+**CSV 日志记录：**
+- 文件：`matches_optimized.csv`
+- 所有交易都记录时间戳
+- 包括：区块号、代币 ID、USD 价值、股数、价格、方向、状态、订单簿数据、交易哈希、实时状态
 
----
-
-## 6. Safety Features Summary
-
-✅ Scaled position sizes (2% default)  
-✅ Circuit breakers for dangerous conditions  
-✅ Minimum trade size filters  
-✅ Order book depth checks  
-✅ Automatic retry with limits  
-✅ Comprehensive error handling  
-✅ Mock trading mode for testing  
-✅ Extensive logging for audit  
+**用例：**
+- 性能分析
+- 调试
+- 审计跟踪
+- 交易后分析
 
 ---
 
-## 7. Understanding the Output
+### 2.10 实时市场检测
 
-**Console Messages:**
+**自动检测：**
+- 检查市场是否"实时"（事件当前正在发生）
+- 实时与非实时市场的不同过期时间
+- 实时市场执行更快
+
+**影响：**
+- 实时市场：61 秒 GTD 过期（更快）
+- 非实时：30 分钟 GTD 过期（更有耐心）
+
+---
+
+## 3. 交易流程（逐步说明）
+
+这是简化概述。有关完整的详细逻辑，请参阅[策略指南](05_STRATEGY.md)。
+
+1. **检测：** 鲸鱼在 Polymarket 上进行交易
+2. **接收事件：** 机器人通过 WebSocket 接收区块链事件（<1 秒延迟）
+3. **解析：** 机器人提取交易详情（代币、规模、价格、方向）
+4. **过滤：**
+   - 检查交易是否来自目标鲸鱼（如果不是则跳过）
+   - 检查交易规模是否足够大（如果太小则跳过，<10 股）
+5. **风险保护检查：** 多层安全系统检查：
+   - 第 1 层：快速检查（交易规模、序列检测）
+   - 第 2 层：订单簿深度分析（如果触发）
+   - 第 3 层：触发状态检查
+   - 结果：如果检测到危险条件，则阻止交易
+6. **仓位管理：** 计算您的订单规模：
+   - 基础：鲸鱼规模的 2%
+   - 应用层级乘数（4000+ 为 1.25x，否则为 1.0x）
+   - 检查最小规模要求（$1.01 要求）
+   - 非常小仓位的概率性执行
+7. **价格计算：** 确定限价：
+   - 从层级获取基础缓冲（大额为 0.01，小额为 0.00）
+   - 添加特定运动缓冲（网球/足球：+0.01）
+   - 计算：whale_price + total_buffer
+   - 限制到有效范围（0.01-0.99）
+8. **订单类型选择：**
+   - 卖单：始终 GTD
+   - 买单：初始为 FAK，最终重试为 GTD
+9. **订单创建：** 使用计算的参数创建签名订单
+10. **提交：** 将订单提交到 Polymarket API
+11. **结果处理：**
+    - 成功：检查成交金额，如果部分成交则重新提交
+    - 失败：进入重新提交循环（4-5 次尝试）
+    - 最终尝试：如果仍未成交，切换到 GTD 订单
+12. **日志记录：** 将所有详情记录到 CSV 和控制台，带有彩色编码状态
+
+---
+
+## 4. 性能特征
+
+**延迟：**
+- 事件检测：<1 秒（取决于区块链）
+- 订单处理：<100ms
+- 从鲸鱼交易到订单的总时间：<2 秒
+
+**吞吐量：**
+- 处理多个并发交易
+- 高频场景的队列处理
+- 自动背压处理
+
+**可靠性：**
+- WebSocket 失败时自动重连
+- 失败订单的重试逻辑
+- 断路器防止不良交易
+- 全面的错误处理
+
+---
+
+## 5. 限制
+
+**机器人不做什么：**
+- ❌ 市场分析或预测
+- ❌ 止损或止盈订单
+- ❌ 投资组合管理
+- ❌ 成交后仓位监控
+- ❌ 退出策略（您管理关闭仓位）
+- ❌ 多鲸鱼复制（一次只能复制一个鲸鱼）
+
+**您需要手动做的事情：**
+- 监控您的仓位
+- 在适当时关闭仓位
+- 管理您的投资组合
+- 调整风险参数
+- 找到好的鲸鱼来复制
+
+---
+
+## 6. 安全功能摘要
+
+✅ 按比例缩小的仓位规模（默认 2%）  
+✅ 危险条件的断路器  
+✅ 最小交易规模过滤器  
+✅ 订单簿深度检查  
+✅ 有限制的自动重试  
+✅ 全面的错误处理  
+✅ 用于测试的模拟交易模式  
+✅ 用于审计的广泛日志记录  
+
+---
+
+## 7. 理解输出
+
+**控制台消息：**
 
 ```
 ⚡ [B:12345] BUY_FILL | $100 | 200 OK | ...
 ```
 
-- `[B:12345]`: Block number
-- `BUY_FILL`: Trade direction and type
-- `$100`: USD value of whale's trade
-- `200 OK`: HTTP status (200 = success)
-- Following numbers: Your fill details, prices, sizes
+- `[B:12345]`：区块号
+- `BUY_FILL`：交易方向和类型
+- `$100`：鲸鱼交易的 USD 价值
+- `200 OK`：HTTP 状态（200 = 成功）
+- 后面的数字：您的成交详情、价格、规模
 
-**Color Coding:**
-- 🟢 Green: Successful fills (high percentage)
-- 🟡 Yellow: Partial fills (medium percentage)
-- 🔴 Red: Failed or low fills (low percentage)
-- 🔵 Blue: Live market indicator
+**颜色编码：**
+- 🟢 绿色：成功成交（高百分比）
+- 🟡 黄色：部分成交（中等百分比）
+- 🔴 红色：失败或低成交（低百分比）
+- 🔵 蓝色：实时市场指示器
 
-**CSV Format:**
-All trades are logged with: timestamp, block, token_id, usd_value, shares, price, direction, status, order_book_data, tx_hash, is_live
+**CSV 格式：**
+所有交易都记录有：时间戳、区块、token_id、usd_value、股数、价格、方向、状态、order_book_data、tx_hash、is_live
 
 ---
 
-## 8. Next Steps
+## 8. 下一步
 
-- Read [Configuration Guide](03_CONFIGURATION.md) to adjust settings
-- Review [Trading Strategy Guide](05_STRATEGY.md) for detailed strategy logic
-- Check [Setup Guide](02_SETUP_GUIDE.md) if you haven't set up yet
-- Review [Troubleshooting](06_TROUBLESHOOTING.md) if you have issues
-
+- 阅读[配置指南](03_CONFIGURATION.md)以调整设置
+- 查看[交易策略指南](05_STRATEGY.md)了解详细策略逻辑
+- 如果还没有设置，请查看[设置指南](02_SETUP_GUIDE.md)
+- 如果遇到问题，请查看[故障排除](06_TROUBLESHOOTING.md)

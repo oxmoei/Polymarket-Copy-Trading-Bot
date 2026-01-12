@@ -1,83 +1,83 @@
-# Trading Strategy Logic
+# 交易策略逻辑
 
-This document explains the complete trading strategy and decision-making logic used by the bot.
+本文档解释了机器人使用的完整交易策略和决策逻辑。
 
-## Table of Contents
+## 目录
 
-1. [Overview](#1-overview)
-2. [Core Strategy Components](#2-core-strategy-components)
-3. [Strategy Parameters Summary](#3-strategy-parameters-summary)
-4. [Detailed Strategy Logic Deep Dive](#4-detailed-strategy-logic-deep-dive)
-5. [Strategy Rationale](#5-strategy-rationale)
-6. [Complete Strategy Logic Flow (Pseudo-Code)](#6-complete-strategy-logic-flow-pseudo-code)
-7. [Performance Considerations](#7-performance-considerations)
-8. [Strategy Limitations](#8-strategy-limitations)
-9. [Optimization Tips](#9-optimization-tips)
-10. [Strategy Monitoring and Metrics](#10-strategy-monitoring-and-metrics)
-11. [Strategy Tuning Guide](#11-strategy-tuning-guide)
-12. [Future Enhancements (Potential)](#12-future-enhancements-potential)
+1. [概述](#1-概述)
+2. [核心策略组件](#2-核心策略组件)
+3. [策略参数摘要](#3-策略参数摘要)
+4. [详细策略逻辑深入分析](#4-详细策略逻辑深入分析)
+5. [策略原理](#5-策略原理)
+6. [完整策略逻辑流程（伪代码）](#6-完整策略逻辑流程伪代码)
+7. [性能考虑](#7-性能考虑)
+8. [策略限制](#8-策略限制)
+9. [优化技巧](#9-优化技巧)
+10. [策略监控和指标](#10-策略监控和指标)
+11. [策略调优指南](#11-策略调优指南)
+12. [未来增强功能（潜在）](#12-未来增强功能潜在)
 
 ---
 
-## 1. Overview
+## 1. 概述
 
-The bot implements a **whale copy trading strategy** with intelligent risk management, position sizing, and execution optimization. The strategy is designed to:
+机器人实现了**鲸鱼跟单交易策略**，具有智能风险管理、仓位规模和执行优化。该策略旨在：
 
-- Copy successful traders (whales) automatically
-- Minimize risk through position scaling and safety checks
-- Optimize execution through tiered strategies
-- Protect capital through risk guards and market analysis
+- 自动复制成功的交易者（鲸鱼）
+- 通过仓位缩放和安全检查最小化风险
+- 通过分层策略优化执行
+- 通过风险防护和市场分析保护资金
 
-### 1.1 Strategy Summary at a Glance
+### 1.1 策略摘要一览
 
-| Component | Strategy | Default Value |
+| 组件 | 策略 | 默认值 |
 |-----------|----------|---------------|
-| **Position Sizing** | 2% of whale size, tiered multipliers | 2% base, 1.25x for 4000+ |
-| **Price Buffer** | Tiered by trade size | +0.01 for 2000+, 0.00 for <2000 |
-| **Order Type** | FAK for buys, GTD for sells | FAK (initial), GTD (final retry) |
-| **Risk Check** | Multi-layer safety system | 4 layers of protection |
-| **Resubmission** | Tiered retry logic | 4-5 attempts depending on size |
-| **Minimum Trade** | Skip trades below threshold | 10 shares minimum |
-| **Probabilistic** | Random execution for small trades | Enabled by default |
+| **仓位规模** | 鲸鱼规模的2%，分层倍数 | 2%基础，4000+为1.25倍 |
+| **价格缓冲** | 按交易规模分层 | 2000+为+0.01，<2000为0.00 |
+| **订单类型** | 买入用FAK，卖出用GTD | FAK（初始），GTD（最终重试） |
+| **风险检查** | 多层安全系统 | 4层保护 |
+| **重新提交** | 分层重试逻辑 | 根据规模4-5次尝试 |
+| **最小交易** | 跳过低于阈值的交易 | 最少10股 |
+| **概率性** | 小交易的随机执行 | 默认启用 |
 
-### 1.2 Strategy Philosophy
+### 1.2 策略理念
 
-**Core Principle:** Copy successful traders at reduced scale while maintaining strict risk management.
+**核心原则：** 在保持严格风险管理的同时，以缩小规模复制成功的交易者。
 
-**Key Tenets:**
-1. **Scale Down:** Never risk more than you can afford (2% default)
-2. **Be Selective:** Skip trades that don't meet minimum quality thresholds
-3. **Protect Capital:** Multiple layers of safety checks prevent dangerous trades
-4. **Optimize Execution:** Different strategies for different trade sizes
-5. **Persist:** Retry logic ensures maximum fill rates without overpaying
+**关键原则：**
+1. **缩小规模：** 永远不要承担超过你能承受的风险（默认2%）
+2. **选择性：** 跳过不符合最低质量阈值的交易
+3. **保护资金：** 多层安全检查防止危险交易
+4. **优化执行：** 不同交易规模采用不同策略
+5. **坚持：** 重试逻辑确保最大成交率而不多付
 
-## 2. Core Strategy Components
+## 2. 核心策略组件
 
-### 2.1 Trade Detection and Filtering
+### 2.1 交易检测和过滤
 
-**Step 1: Blockchain Monitoring**
-- Bot connects to Polygon blockchain via WebSocket
-- Subscribes to `OrdersFilled` events from Polymarket order book contracts
-- Filters events by target whale address (only processes trades from your selected whale)
+**步骤1：区块链监控**
+- 机器人通过WebSocket连接到Polygon区块链
+- 订阅Polymarket订单簿合约的`OrdersFilled`事件
+- 按目标鲸鱼地址过滤事件（仅处理您选择的鲸鱼的交易）
 
-**Step 2: Trade Validation**
-- Verifies trade is from target whale address
-- Checks trade size meets minimum threshold (default: 10 shares)
-- Validates trade data integrity (price, size, token ID)
+**步骤2：交易验证**
+- 验证交易来自目标鲸鱼地址
+- 检查交易规模是否满足最小阈值（默认：10股）
+- 验证交易数据完整性（价格、规模、代币ID）
 
-**Step 3: Initial Filtering**
-- **Skip Conditions:**
-  - Trade size < minimum threshold (prevents dust orders)
-  - Invalid token ID or price data
-  - Duplicate trades (same transaction hash)
+**步骤3：初始过滤**
+- **跳过条件：**
+  - 交易规模 < 最小阈值（防止灰尘订单）
+  - 无效的代币ID或价格数据
+  - 重复交易（相同交易哈希）
 
-### 2.2 Position Sizing Strategy
+### 2.2 仓位规模策略
 
-**Base Scaling:**
-- Default: **2% of whale's position size**
-- Configurable via `SCALING_RATIO` constant (currently 0.02)
+**基础缩放：**
+- 默认：**鲸鱼仓位规模的2%**
+- 可通过`SCALING_RATIO`常量配置（当前为0.02）
 
-**Size Calculation Formula:**
+**规模计算公式：**
 ```
 target_size = whale_shares × SCALING_RATIO × size_multiplier
 minimum_size = max(MIN_CASH_VALUE / price, MIN_SHARE_COUNT)
@@ -94,33 +94,33 @@ else:
     order_size = minimum_size  # Always execute minimum
 ```
 
-**Size Multipliers by Tier:**
-- **Large trades (4000+ shares):** 1.25x multiplier
-- **Medium trades (2000-3999 shares):** 1.0x multiplier
-- **Small trades (1000-1999 shares):** 1.0x multiplier
-- **Very small trades (<1000 shares):** 1.0x multiplier
+**按层级划分的规模倍数：**
+- **大交易（4000+股）：** 1.25倍倍数
+- **中等交易（2000-3999股）：** 1.0倍倍数
+- **小交易（1000-1999股）：** 1.0倍倍数
+- **非常小的交易（<1000股）：** 1.0倍倍数
 
-**Example Calculation:**
+**计算示例：**
 ```
-Whale trade: 10,000 shares @ $0.50
-Base scaling: 10,000 × 0.02 = 200 shares
-Tier multiplier (4000+): 200 × 1.25 = 250 shares
-Final order: 250 shares @ $0.50 = $125
+鲸鱼交易：10,000股 @ $0.50
+基础缩放：10,000 × 0.02 = 200股
+层级倍数（4000+）：200 × 1.25 = 250股
+最终订单：250股 @ $0.50 = $125
 ```
 
-### 2.3 Price Strategy
+### 2.3 价格策略
 
-**Price Buffer Logic:**
-The bot adds price buffers to improve fill rates, varying by trade size and market type:
+**价格缓冲逻辑：**
+机器人添加价格缓冲以提高成交率，根据交易规模和市场类型而变化：
 
-| Trade Size | Base Buffer | Tennis Buffer | Soccer Buffer | Total Buffer |
+| 交易规模 | 基础缓冲 | 网球缓冲 | 足球缓冲 | 总缓冲 |
 |------------|-------------|---------------|---------------|--------------|
-| 4000+      | +0.01       | +0.01 (if applicable) | +0.01 (if applicable) | Up to +0.03 |
-| 2000-3999  | +0.01       | +0.01 (if applicable) | +0.01 (if applicable) | Up to +0.03 |
-| 1000-1999  | +0.00       | +0.01 (if applicable) | +0.01 (if applicable) | Up to +0.02 |
-| <1000      | +0.00       | +0.01 (if applicable) | +0.01 (if applicable) | Up to +0.02 |
+| 4000+      | +0.01       | +0.01（如适用） | +0.01（如适用） | 最多+0.03 |
+| 2000-3999  | +0.01       | +0.01（如适用） | +0.01（如适用） | 最多+0.03 |
+| 1000-1999  | +0.00       | +0.01（如适用） | +0.01（如适用） | 最多+0.02 |
+| <1000      | +0.00       | +0.01（如适用） | +0.01（如适用） | 最多+0.02 |
 
-**Price Calculation:**
+**价格计算：**
 ```rust
 if side == BUY:
     limit_price = min(whale_price + buffer, 0.99)
@@ -128,77 +128,77 @@ else:  // SELL
     limit_price = max(whale_price - buffer, 0.01)
 ```
 
-**Why Price Buffers:**
-- **Large trades:** Higher buffer improves fill probability for time-sensitive trades
-- **Small trades:** No buffer minimizes slippage cost for less urgent trades
-- **Special markets (Tennis/Soccer):** Additional buffer accounts for volatility
+**为什么需要价格缓冲：**
+- **大交易：** 更高的缓冲提高时间敏感交易的成交概率
+- **小交易：** 无缓冲最小化不太紧急交易的滑点成本
+- **特殊市场（网球/足球）：** 额外缓冲考虑波动性
 
-### 2.4 Execution Tier Strategy
+### 2.4 执行层级策略
 
-The bot uses **tiered execution** based on trade size to optimize for different market conditions:
+机器人根据交易规模使用**分层执行**，以优化不同市场条件：
 
-#### Tier 1: Large Trades (4000+ shares)
-**Strategy:** Aggressive execution
-- Price buffer: +0.01
-- Size multiplier: 1.25x (25% larger position)
-- Order type: FAK (Fill and Kill)
-- Resubmit attempts: 5
-- Price chasing: Yes (first retry only)
-- Max resubmit buffer: +0.01
+#### 层级1：大交易（4000+股）
+**策略：** 激进执行
+- 价格缓冲：+0.01
+- 规模倍数：1.25倍（仓位增加25%）
+- 订单类型：FAK（Fill and Kill）
+- 重新提交尝试：5次
+- 价格追逐：是（仅第一次重试）
+- 最大重新提交缓冲：+0.01
 
-**Rationale:** Large trades indicate strong conviction. More aggressive execution maximizes exposure while buffer ensures fills.
+**原理：** 大交易表明强烈信念。更激进的执行最大化敞口，同时缓冲确保成交。
 
-#### Tier 2: Medium Trades (2000-3999 shares)
-**Strategy:** Balanced execution
-- Price buffer: +0.01
-- Size multiplier: 1.0x (normal scaling)
-- Order type: FAK
-- Resubmit attempts: 4
-- Price chasing: No
-- Max resubmit buffer: 0.00
+#### 层级2：中等交易（2000-3999股）
+**策略：** 平衡执行
+- 价格缓冲：+0.01
+- 规模倍数：1.0倍（正常缩放）
+- 订单类型：FAK
+- 重新提交尝试：4次
+- 价格追逐：否
+- 最大重新提交缓冲：0.00
 
-**Rationale:** Standard execution with moderate buffer. No price chasing prevents overpaying.
+**原理：** 标准执行，适度缓冲。不追逐价格防止多付。
 
-#### Tier 3: Small Trades (1000-1999 shares)
-**Strategy:** Conservative execution
-- Price buffer: 0.00
-- Size multiplier: 1.0x
-- Order type: FAK
-- Resubmit attempts: 4
-- Price chasing: No
-- Max resubmit buffer: 0.00
+#### 层级3：小交易（1000-1999股）
+**策略：** 保守执行
+- 价格缓冲：0.00
+- 规模倍数：1.0倍
+- 订单类型：FAK
+- 重新提交尝试：4次
+- 价格追逐：否
+- 最大重新提交缓冲：0.00
 
-**Rationale:** Small trades get conservative treatment. No buffer minimizes slippage.
+**原理：** 小交易采用保守处理。无缓冲最小化滑点。
 
-#### Tier 4: Very Small Trades (<1000 shares)
-**Strategy:** Minimal execution
-- Price buffer: 0.00
-- Size multiplier: 1.0x
-- Order type: FAK
-- Resubmit attempts: 4
-- Price chasing: No
-- Max resubmit buffer: 0.00
+#### 层级4：非常小的交易（<1000股）
+**策略：** 最小执行
+- 价格缓冲：0.00
+- 规模倍数：1.0倍
+- 订单类型：FAK
+- 重新提交尝试：4次
+- 价格追逐：否
+- 最大重新提交缓冲：0.00
 
-**Rationale:** Minimal exposure, minimal slippage. Probabilistic sizing may skip very small trades.
+**原理：** 最小敞口，最小滑点。概率性规模可能跳过非常小的交易。
 
-### 2.5 Order Type Selection
+### 2.5 订单类型选择
 
-**FAK (Fill and Kill) Orders:**
-- Used for: All buy orders, most retry attempts
-- Behavior: Executes immediately or cancels (no order book placement)
-- Advantage: Fast execution, no stale orders
-- Use case: Time-sensitive trades where immediate execution is preferred
+**FAK（Fill and Kill）订单：**
+- 用于：所有买入订单，大多数重试尝试
+- 行为：立即执行或取消（不挂单）
+- 优势：快速执行，无过期订单
+- 用例：时间敏感交易，优先立即执行
 
-**GTD (Good Till Date) Orders:**
-- Used for: All sell orders, final retry attempt on failed buys
-- Behavior: Places order on book with expiration time
-- Expiration:
-  - **Live markets:** 61 seconds (faster expiration for active markets)
-  - **Non-live markets:** 1800 seconds (30 minutes, more patient)
-- Advantage: Allows market to come to your price
-- Use case: Less urgent trades, final attempts after FAK failures
+**GTD（Good Till Date）订单：**
+- 用于：所有卖出订单，失败买入的最终重试尝试
+- 行为：在订单簿上挂单，带过期时间
+- 过期时间：
+  - **活跃市场：** 61秒（活跃市场更快过期）
+  - **非活跃市场：** 1800秒（30分钟，更耐心）
+- 优势：允许市场达到您的价格
+- 用例：不太紧急的交易，FAK失败后的最终尝试
 
-**Selection Logic:**
+**选择逻辑：**
 ```rust
 if side == SELL:
     order_type = GTD  // All sells use GTD
@@ -209,22 +209,22 @@ else:  // BUY
         order_type = FAK  // Earlier attempts use FAK
 ```
 
-### 2.6 Risk Management (Circuit Breaker)
+### 2.6 风险管理（断路器）
 
-The bot implements a **multi-layer risk management system** to protect capital:
+机器人实现了**多层风险管理系统**以保护资金：
 
-#### Layer 1: Trade Size Filtering
-- **Minimum threshold:** 10 shares (configurable)
-- **Purpose:** Filters out dust orders and very small trades
-- **Skip reason:** Negative expected value after fees
+#### 第1层：交易规模过滤
+- **最小阈值：** 10股（可配置）
+- **目的：** 过滤灰尘订单和非常小的交易
+- **跳过原因：** 扣除费用后预期价值为负
 
-#### Layer 2: Sequence Detection
-- **Trigger:** Multiple large trades in short time window
-- **Detection window:** 30 seconds (configurable)
-- **Trigger threshold:** 2 consecutive large trades (configurable)
-- **Large trade definition:** >1500 shares (configurable)
+#### 第2层：序列检测
+- **触发：** 短时间内多次大交易
+- **检测窗口：** 30秒（可配置）
+- **触发阈值：** 2次连续大交易（可配置）
+- **大交易定义：** >1500股（可配置）
 
-**Logic:**
+**逻辑：**
 ```
 if trade_size >= LARGE_TRADE_THRESHOLD:
     add_to_sequence_history(trade)
@@ -233,13 +233,13 @@ if trade_size >= LARGE_TRADE_THRESHOLD:
         trigger_book_depth_check()
 ```
 
-#### Layer 3: Order Book Depth Analysis
-- **Trigger:** After sequence detection or on demand
-- **Requirement:** Minimum liquidity beyond whale's price
-- **Default threshold:** $200 USD (configurable)
-- **Check:** Analyzes order book to ensure sufficient depth
+#### 第3层：订单簿深度分析
+- **触发：** 序列检测后或按需
+- **要求：** 鲸鱼价格之外的最小流动性
+- **默认阈值：** $200 USD（可配置）
+- **检查：** 分析订单簿以确保足够的深度
 
-**Depth Calculation:**
+**深度计算：**
 ```
 if side == BUY:
     check_depth = sum(ask_price × ask_size) where ask_price <= (whale_price + buffer + 0.005)
@@ -250,375 +250,375 @@ if check_depth < MIN_DEPTH_USD:
     BLOCK_TRADE
 ```
 
-#### Layer 4: Trip Mechanism
-- **Trigger:** Book fetch failure or dangerous conditions detected
-- **Action:** Block all trades for token for specified duration
-- **Default duration:** 120 seconds (2 minutes, configurable)
-- **Recovery:** Automatically resets after duration expires
+#### 第4层：跳闸机制
+- **触发：** 订单簿获取失败或检测到危险条件
+- **操作：** 在指定持续时间内阻止该代币的所有交易
+- **默认持续时间：** 120秒（2分钟，可配置）
+- **恢复：** 持续时间到期后自动重置
 
-**Trip Conditions:**
-- Order book API call fails
-- Detected manipulation patterns
-- Multiple consecutive depth check failures
+**跳闸条件：**
+- 订单簿API调用失败
+- 检测到操纵模式
+- 多次连续深度检查失败
 
-### 2.7 Resubmission Strategy
+### 2.7 重新提交策略
 
-When an order fails to fill completely, the bot implements intelligent resubmission:
+当订单未能完全成交时，机器人实施智能重新提交：
 
-#### Retry Attempts by Tier
+#### 按层级划分的重试尝试
 
-**Large Trades (4000+ shares):**
-- Max attempts: **5**
-- Attempt 1: Price +0.01 (chase)
-- Attempts 2-5: Same price (flat retries)
-- Delay: None (immediate retries)
-- Final attempt: GTD order (places on book)
+**大交易（4000+股）：**
+- 最大尝试：**5次**
+- 尝试1：价格+0.01（追逐）
+- 尝试2-5：相同价格（平重试）
+- 延迟：无（立即重试）
+- 最终尝试：GTD订单（挂单）
 
-**Small/Medium Trades (<4000 shares):**
-- Max attempts: **4**
-- All attempts: Same price (no chasing)
-- Delay: 50ms between attempts (for <1000 shares)
-- Final attempt: GTD order (places on book)
+**小/中等交易（<4000股）：**
+- 最大尝试：**4次**
+- 所有尝试：相同价格（不追逐）
+- 延迟：尝试之间50ms（对于<1000股）
+- 最终尝试：GTD订单（挂单）
 
-#### Resubmission Flow
-
-```
-1. Initial order placed (FAK)
-   ↓
-2. Order response received
-   ↓
-3. Check fill status:
-   - Fully filled → DONE
-   - Partially filled → Continue with remaining size
-   - Not filled → Retry
-   ↓
-4. Retry logic:
-   - Calculate new price (with/without increment)
-   - Check if price exceeds max buffer
-   - Submit retry order
-   ↓
-5. Repeat until max attempts or fully filled
-   ↓
-6. Final attempt: GTD order (if not fully filled)
-```
-
-#### Price Escalation Rules
-
-**Large Trades Only (4000+ shares):**
-- **Attempt 1:** Chase price +0.01 (up to max buffer)
-- **Attempts 2-5:** Flat retries at same price
-- **Max total buffer:** +0.02 (initial +0.01 + resubmit +0.01)
-
-**Small/Medium Trades:**
-- **All attempts:** Flat retries (no price escalation)
-- **Rationale:** Prevents overpaying on smaller trades
-
-### 2.8 Market-Specific Adjustments
-
-#### Tennis Markets (ATP)
-- **Additional buffer:** +0.01
-- **Detection:** Checks cached tennis token list
-- **Rationale:** Tennis markets can have higher volatility
-- **Applied to:** All tennis market trades regardless of size
-
-#### Soccer Markets (Ligue 1)
-- **Additional buffer:** +0.01
-- **Detection:** Checks cached soccer token list
-- **Rationale:** Soccer markets can have rapid price movements
-- **Applied to:** All soccer market trades regardless of size
-
-#### Live vs Non-Live Markets
-
-**Live Markets:**
-- **GTD expiration:** 61 seconds
-- **Detection:** Checks market live status cache
-- **Rationale:** Faster expiration for active markets prevents stale orders
-
-**Non-Live Markets:**
-- **GTD expiration:** 1800 seconds (30 minutes)
-- **Rationale:** More patient approach for inactive markets
-
-### 2.9 Execution Flow (Complete Decision Tree)
+#### 重新提交流程
 
 ```
-1. BLOCKCHAIN EVENT RECEIVED
+1. 初始订单提交（FAK）
    ↓
-2. VALIDATE EVENT
-   ├─ Is from target whale? → NO → SKIP
-   ├─ Valid trade data? → NO → SKIP
-   └─ Trade size >= minimum? → NO → SKIP
+2. 收到订单响应
    ↓
-3. RISK CHECK (Layer 1)
-   ├─ Trade too small? → YES → SKIP (SKIPPED_SMALL)
-   └─ Continue
+3. 检查成交状态：
+   - 完全成交 → 完成
+   - 部分成交 → 继续处理剩余规模
+   - 未成交 → 重试
    ↓
-4. SEQUENCE CHECK (Layer 2)
-   ├─ Large trade? → YES → Add to sequence
-   ├─ Sequence triggered? → YES → Depth check required
-   └─ Continue
+4. 重试逻辑：
+   - 计算新价格（带/不带增量）
+   - 检查价格是否超过最大缓冲
+   - 提交重试订单
    ↓
-5. DEPTH CHECK (Layer 3, if triggered)
-   ├─ Fetch order book
-   ├─ Calculate depth beyond price
-   ├─ Depth sufficient? → NO → BLOCK (RISK_BLOCKED)
-   └─ Continue
+5. 重复直到最大尝试或完全成交
    ↓
-6. TRIP CHECK (Layer 4)
-   ├─ Token tripped? → YES → BLOCK (RISK_BLOCKED: TRIPPED)
-   └─ Continue
-   ↓
-7. POSITION SIZING
-   ├─ Calculate base size (whale_size × 0.02)
-   ├─ Apply tier multiplier
-   ├─ Check minimum size requirement
-   ├─ Probabilistic sizing? → Maybe skip
-   └─ Final size determined
-   ↓
-8. PRICE CALCULATION
-   ├─ Get base buffer from tier
-   ├─ Add tennis buffer (if tennis market)
-   ├─ Add soccer buffer (if soccer market)
-   ├─ Calculate limit price
-   └─ Clamp to valid range (0.01-0.99)
-   ↓
-9. ORDER TYPE SELECTION
-   ├─ Side == SELL? → YES → GTD
-   ├─ Side == BUY? → YES → FAK (initially)
-   └─ Order type determined
-   ↓
-10. ORDER SUBMISSION
-    ├─ Create signed order
-    ├─ Submit to Polymarket API
-    └─ Receive response
-    ↓
-11. RESPONSE HANDLING
-    ├─ Success? → Check fill amount
-    │   ├─ Fully filled → DONE
-    │   ├─ Partially filled → Resubmit remaining
-    │   └─ Not filled → Retry logic
-    └─ Failure? → Retry logic
-    ↓
-12. RESUBMISSION (if needed)
-    ├─ Calculate retry price
-    ├─ Check max attempts
-    ├─ Submit retry order
-    └─ Repeat until filled or max attempts
-    ↓
-13. FINAL ATTEMPT (if not filled)
-    ├─ Switch to GTD order
-    ├─ Set appropriate expiration
-    └─ Place on order book
-    ↓
-14. LOGGING
-    ├─ Log to CSV file
-    ├─ Print to console
-    └─ Update statistics
+6. 最终尝试：GTD订单（如果未完全成交）
 ```
 
-## 3. Strategy Parameters Summary
+#### 价格升级规则
 
-| Parameter | Default Value | Description |
+**仅大交易（4000+股）：**
+- **尝试1：** 追逐价格+0.01（最多到最大缓冲）
+- **尝试2-5：** 相同价格的平重试
+- **最大总缓冲：** +0.02（初始+0.01 + 重新提交+0.01）
+
+**小/中等交易：**
+- **所有尝试：** 平重试（无价格升级）
+- **原理：** 防止在小交易上多付
+
+### 2.8 市场特定调整
+
+#### 网球市场（ATP）
+- **额外缓冲：** +0.01
+- **检测：** 检查缓存的网球代币列表
+- **原理：** 网球市场可能有更高的波动性
+- **应用于：** 所有网球市场交易，无论规模大小
+
+#### 足球市场（法甲）
+- **额外缓冲：** +0.01
+- **检测：** 检查缓存的足球代币列表
+- **原理：** 足球市场可能有快速的价格变动
+- **应用于：** 所有足球市场交易，无论规模大小
+
+#### 活跃 vs 非活跃市场
+
+**活跃市场：**
+- **GTD过期：** 61秒
+- **检测：** 检查市场活跃状态缓存
+- **原理：** 活跃市场更快过期防止过期订单
+
+**非活跃市场：**
+- **GTD过期：** 1800秒（30分钟）
+- **原理：** 对非活跃市场更耐心的方法
+
+### 2.9 执行流程（完整决策树）
+
+```
+1. 收到区块链事件
+   ↓
+2. 验证事件
+   ├─ 来自目标鲸鱼？ → 否 → 跳过
+   ├─ 有效交易数据？ → 否 → 跳过
+   └─ 交易规模 >= 最小？ → 否 → 跳过
+   ↓
+3. 风险检查（第1层）
+   ├─ 交易太小？ → 是 → 跳过（SKIPPED_SMALL）
+   └─ 继续
+   ↓
+4. 序列检查（第2层）
+   ├─ 大交易？ → 是 → 添加到序列
+   ├─ 序列触发？ → 是 → 需要深度检查
+   └─ 继续
+   ↓
+5. 深度检查（第3层，如触发）
+   ├─ 获取订单簿
+   ├─ 计算价格之外的深度
+   ├─ 深度足够？ → 否 → 阻止（RISK_BLOCKED）
+   └─ 继续
+   ↓
+6. 跳闸检查（第4层）
+   ├─ 代币跳闸？ → 是 → 阻止（RISK_BLOCKED: TRIPPED）
+   └─ 继续
+   ↓
+7. 仓位规模
+   ├─ 计算基础规模（whale_size × 0.02）
+   ├─ 应用层级倍数
+   ├─ 检查最小规模要求
+   ├─ 概率性规模？ → 可能跳过
+   └─ 确定最终规模
+   ↓
+8. 价格计算
+   ├─ 从层级获取基础缓冲
+   ├─ 添加网球缓冲（如果是网球市场）
+   ├─ 添加足球缓冲（如果是足球市场）
+   ├─ 计算限价
+   └─ 限制到有效范围（0.01-0.99）
+   ↓
+9. 订单类型选择
+   ├─ 方向 == 卖出？ → 是 → GTD
+   ├─ 方向 == 买入？ → 是 → FAK（初始）
+   └─ 确定订单类型
+   ↓
+10. 订单提交
+    ├─ 创建签名订单
+    ├─ 提交到Polymarket API
+    └─ 接收响应
+    ↓
+11. 响应处理
+    ├─ 成功？ → 检查成交数量
+    │   ├─ 完全成交 → 完成
+    │   ├─ 部分成交 → 重新提交剩余
+    │   └─ 未成交 → 重试逻辑
+    └─ 失败？ → 重试逻辑
+    ↓
+12. 重新提交（如需要）
+    ├─ 计算重试价格
+    ├─ 检查最大尝试
+    ├─ 提交重试订单
+    └─ 重复直到成交或最大尝试
+    ↓
+13. 最终尝试（如果未成交）
+    ├─ 切换到GTD订单
+    ├─ 设置适当的过期时间
+    └─ 挂单
+    ↓
+14. 日志记录
+    ├─ 记录到CSV文件
+    ├─ 打印到控制台
+    └─ 更新统计信息
+```
+
+## 3. 策略参数摘要
+
+| 参数 | 默认值 | 描述 |
 |-----------|---------------|-------------|
-| `SCALING_RATIO` | 0.02 (2%) | Base position size relative to whale |
-| `MIN_WHALE_SHARES_TO_COPY` | 10.0 | Minimum whale trade size to copy |
-| `MIN_CASH_VALUE` | $1.01 | Minimum order value in USD |
-| `MIN_SHARE_COUNT` | 0.0 | Minimum share count (usually overridden by cash value) |
-| `USE_PROBABILISTIC_SIZING` | true | Enable probabilistic execution for small positions |
-| `PRICE_BUFFER` (default) | 0.00 | Default price buffer |
-| `CB_LARGE_TRADE_SHARES` | 1500.0 | Threshold for "large trade" detection |
-| `CB_CONSECUTIVE_TRIGGER` | 2 | Number of large trades to trigger depth check |
-| `CB_SEQUENCE_WINDOW_SECS` | 30 | Time window for sequence detection |
-| `CB_MIN_DEPTH_USD` | $200.0 | Minimum order book depth required |
-| `CB_TRIP_DURATION_SECS` | 120 | Duration to block trades after trip |
-| `RESUBMIT_PRICE_INCREMENT` | 0.01 | Price increment for resubmission |
-| Tennis buffer | +0.01 | Additional buffer for tennis markets |
-| Soccer buffer | +0.01 | Additional buffer for soccer markets |
+| `SCALING_RATIO` | 0.02 (2%) | 相对于鲸鱼的基础仓位规模 |
+| `MIN_WHALE_SHARES_TO_COPY` | 10.0 | 要复制的最小鲸鱼交易规模 |
+| `MIN_CASH_VALUE` | $1.01 | 最小订单价值（USD） |
+| `MIN_SHARE_COUNT` | 0.0 | 最小股数（通常被现金价值覆盖） |
+| `USE_PROBABILISTIC_SIZING` | true | 为小仓位启用概率性执行 |
+| `PRICE_BUFFER` (默认) | 0.00 | 默认价格缓冲 |
+| `CB_LARGE_TRADE_SHARES` | 1500.0 | "大交易"检测阈值 |
+| `CB_CONSECUTIVE_TRIGGER` | 2 | 触发深度检查的大交易数量 |
+| `CB_SEQUENCE_WINDOW_SECS` | 30 | 序列检测的时间窗口 |
+| `CB_MIN_DEPTH_USD` | $200.0 | 所需的最小订单簿深度 |
+| `CB_TRIP_DURATION_SECS` | 120 | 跳闸后阻止交易的持续时间 |
+| `RESUBMIT_PRICE_INCREMENT` | 0.01 | 重新提交的价格增量 |
+| 网球缓冲 | +0.01 | 网球市场的额外缓冲 |
+| 足球缓冲 | +0.01 | 足球市场的额外缓冲 |
 
-## 4. Detailed Strategy Logic Deep Dive
+## 4. 详细策略逻辑深入分析
 
-### 4.1 Position Sizing Algorithm (Step-by-Step)
+### 4.1 仓位规模算法（逐步）
 
-**Step 1: Calculate Base Target Size**
+**步骤1：计算基础目标规模**
 ```rust
 // From: src/settings.rs
 const SCALING_RATIO: f64 = 0.02;  // 2%
 
 base_target = whale_shares × SCALING_RATIO
-// Example: 10,000 shares × 0.02 = 200 shares
+// 示例：10,000股 × 0.02 = 200股
 ```
 
-**Step 2: Apply Tier-Based Size Multiplier**
+**步骤2：应用基于层级的大小倍数**
 ```rust
 // From: src/settings.rs get_tier_params()
 if whale_shares >= 4000.0:
-    size_multiplier = 1.25  // Large trades get 25% boost
+    size_multiplier = 1.25  // 大交易获得25%提升
 elif whale_shares >= 2000.0:
-    size_multiplier = 1.0   // Medium trades: normal
+    size_multiplier = 1.0   // 中等交易：正常
 elif whale_shares >= 1000.0:
-    size_multiplier = 1.0   // Small trades: normal
+    size_multiplier = 1.0   // 小交易：正常
 else:
-    size_multiplier = 1.0   // Very small: normal
+    size_multiplier = 1.0   // 非常小：正常
 
 scaled_target = base_target × size_multiplier
-// Example: 200 shares × 1.25 = 250 shares (for 4000+ tier)
+// 示例：200股 × 1.25 = 250股（对于4000+层级）
 ```
 
-**Step 3: Calculate Minimum Required Size**
+**步骤3：计算最小所需规模**
 ```rust
 // From: src/main.rs calculate_safe_size()
-const MIN_CASH_VALUE: f64 = 1.01;  // Minimum $1.01 order value
-const MIN_SHARE_COUNT: f64 = 0.0;  // Usually overridden by cash value
+const MIN_CASH_VALUE: f64 = 1.01;  // 最小$1.01订单价值
+const MIN_SHARE_COUNT: f64 = 0.0;  // 通常被现金价值覆盖
 
 minimum_size = max(MIN_CASH_VALUE / price, MIN_SHARE_COUNT)
-// Example: max(1.01 / 0.50, 0.0) = max(2.02, 0.0) = 2.02 shares
+// 示例：max(1.01 / 0.50, 0.0) = max(2.02, 0.0) = 2.02股
 ```
 
-**Step 4: Probabilistic Execution Check**
+**步骤4：概率性执行检查**
 ```rust
 // From: src/main.rs calculate_safe_size()
 const USE_PROBABILISTIC_SIZING: bool = true;
 
 if scaled_target >= minimum_size:
-    return (scaled_target, SizeType::Scaled)  // Full execution
+    return (scaled_target, SizeType::Scaled)  // 完全执行
     
 else if USE_PROBABILISTIC_SIZING:
     probability = scaled_target / minimum_size
-    // Example: 1.5 shares / 2.02 shares = 0.743 (74.3%)
+    // 示例：1.5股 / 2.02股 = 0.743 (74.3%)
     
     if random() < probability:
-        return (minimum_size, SizeType::ProbHit(74))  // Execute
+        return (minimum_size, SizeType::ProbHit(74))  // 执行
     else:
-        return (0.0, SizeType::ProbSkip(74))  // Skip
+        return (0.0, SizeType::ProbSkip(74))  // 跳过
         
 else:
-    return (minimum_size, SizeType::Scaled)  // Always execute minimum
+    return (minimum_size, SizeType::Scaled)  // 始终执行最小
 ```
 
-**Complete Example 1 (Large Trade - Full Execution):**
+**完整示例1（大交易 - 完全执行）：**
 ```
-Whale Trade: 10,000 shares @ $0.50
+鲸鱼交易：10,000股 @ $0.50
 
-Step 1: base_target = 10,000 × 0.02 = 200 shares
-Step 2: size_multiplier = 1.25 (4000+ tier)
-        scaled_target = 200 × 1.25 = 250 shares
-Step 3: minimum_size = max(1.01 / 0.50, 0.0) = 2.02 shares
-Step 4: 250 >= 2.02 → Execute full size (SCALED)
+步骤1：base_target = 10,000 × 0.02 = 200股
+步骤2：size_multiplier = 1.25 (4000+层级)
+        scaled_target = 200 × 1.25 = 250股
+步骤3：minimum_size = max(1.01 / 0.50, 0.0) = 2.02股
+步骤4：250 >= 2.02 → 执行完整规模（SCALED）
         
-Final Order: 250 shares @ $0.50 = $125 USD
+最终订单：250股 @ $0.50 = $125 USD
 ```
 
-**Complete Example 2 (Small Trade - Probabilistic Execution):**
+**完整示例2（小交易 - 概率性执行）：**
 ```
-Whale Trade: 50 shares @ $0.60
+鲸鱼交易：50股 @ $0.60
 
-Step 1: base_target = 50 × 0.02 = 1.0 share
-Step 2: size_multiplier = 1.0 (below 1000 tier)
-        scaled_target = 1.0 × 1.0 = 1.0 share
-Step 3: minimum_size = max(1.01 / 0.60, 0.0) = 1.68 shares
-Step 4: 1.0 < 1.68 → Probabilistic sizing
+步骤1：base_target = 50 × 0.02 = 1.0股
+步骤2：size_multiplier = 1.0 (低于1000层级)
+        scaled_target = 1.0 × 1.0 = 1.0股
+步骤3：minimum_size = max(1.01 / 0.60, 0.0) = 1.68股
+步骤4：1.0 < 1.68 → 概率性规模
         
-        probability = 1.0 / 1.68 = 0.595 (59.5%)
-        random_value = 0.42 (for example)
+        概率 = 1.0 / 1.68 = 0.595 (59.5%)
+        随机值 = 0.42（例如）
         
-        Since 0.42 < 0.595:
-        → Execute with minimum size
+        由于 0.42 < 0.595：
+        → 以最小规模执行
         
-Final Order: 1.68 shares @ $0.60 = $1.01 USD (PROB_HIT 60%)
+最终订单：1.68股 @ $0.60 = $1.01 USD (PROB_HIT 60%)
 ```
 
-**Complete Example 3 (Very Small Trade - Probabilistic Skip):**
+**完整示例3（非常小的交易 - 概率性跳过）：**
 ```
-Whale Trade: 30 shares @ $0.70
+鲸鱼交易：30股 @ $0.70
 
-Step 1: base_target = 30 × 0.02 = 0.6 shares
-Step 2: size_multiplier = 1.0
-        scaled_target = 0.6 × 1.0 = 0.6 shares
-Step 3: minimum_size = max(1.01 / 0.70, 0.0) = 1.44 shares
-Step 4: 0.6 < 1.44 → Probabilistic sizing
+步骤1：base_target = 30 × 0.02 = 0.6股
+步骤2：size_multiplier = 1.0
+        scaled_target = 0.6 × 1.0 = 0.6股
+步骤3：minimum_size = max(1.01 / 0.70, 0.0) = 1.44股
+步骤4：0.6 < 1.44 → 概率性规模
         
-        probability = 0.6 / 1.44 = 0.417 (41.7%)
-        random_value = 0.65 (for example)
+        概率 = 0.6 / 1.44 = 0.417 (41.7%)
+        随机值 = 0.65（例如）
         
-        Since 0.65 >= 0.417:
-        → Skip trade (PROB_SKIP 42%)
+        由于 0.65 >= 0.417：
+        → 跳过交易（PROB_SKIP 42%）
         
-Result: No order placed (trade too small to justify minimum order cost)
+结果：未下订单（交易太小，无法证明最小订单成本合理）
 ```
 
-**Why Probabilistic Sizing?**
+**为什么需要概率性规模？**
 
-The probabilistic sizing system prevents negative expected value trades while still allowing participation in very small whale trades occasionally. 
+概率性规模系统防止负预期价值交易，同时仍允许偶尔参与非常小的鲸鱼交易。
 
-**Mathematical Rationale:**
-- Very small positions (<$1.01) would cost more in fees than they're worth
-- But completely skipping all small trades means missing some opportunities
-- Solution: Execute small trades probabilistically based on their size relative to minimum
+**数学原理：**
+- 非常小的仓位（<$1.01）的费用成本会超过其价值
+- 但完全跳过所有小交易意味着错过一些机会
+- 解决方案：根据其规模相对于最小值的概率性执行小交易
 
-**Expected Value Calculation:**
+**预期价值计算：**
 ```
-EV = (probability × profit) - fees
+EV = (概率 × 利润) - 费用
 
-Without probabilistic sizing:
-- Always execute minimum: EV = profit - fees (often negative)
-- Always skip: EV = 0 (miss opportunities)
+没有概率性规模：
+- 始终执行最小：EV = 利润 - 费用（通常为负）
+- 始终跳过：EV = 0（错过机会）
 
-With probabilistic sizing:
-- Execute with probability: EV = (probability × profit) - (probability × fees)
-- This ensures EV is non-negative on average
+有概率性规模：
+- 以概率执行：EV = (概率 × 利润) - (概率 × 费用)
+- 这确保EV平均非负
 ```
 
-### 4.2 Price Calculation Logic (Detailed)
+### 4.2 价格计算逻辑（详细）
 
-**Step 1: Determine Base Buffer from Tier**
+**步骤1：从层级确定基础缓冲**
 ```rust
 // From: src/settings.rs get_tier_params()
 if whale_shares >= 4000.0:
-    base_buffer = 0.01  // Large: +0.01 buffer
+    base_buffer = 0.01  // 大：+0.01缓冲
 elif whale_shares >= 2000.0:
-    base_buffer = 0.01  // Medium: +0.01 buffer
+    base_buffer = 0.01  // 中等：+0.01缓冲
 elif whale_shares >= 1000.0:
-    base_buffer = 0.00  // Small: no buffer
+    base_buffer = 0.00  // 小：无缓冲
 else:
-    base_buffer = 0.00  // Very small: no buffer
+    base_buffer = 0.00  // 非常小：无缓冲
 ```
 
-**Step 2: Add Sport-Specific Buffers**
+**步骤2：添加运动特定缓冲**
 ```rust
 // From: src/settings.rs get_tier_params()
-tennis_buffer = tennis_markets::get_tennis_token_buffer(token_id)  // +0.01 if tennis
-soccer_buffer = soccer_markets::get_soccer_token_buffer(token_id)  // +0.01 if soccer
+tennis_buffer = tennis_markets::get_tennis_token_buffer(token_id)  // 如果是网球则为+0.01
+soccer_buffer = soccer_markets::get_soccer_token_buffer(token_id)  // 如果是足球则为+0.01
 
 total_buffer = base_buffer + tennis_buffer + soccer_buffer
 ```
 
-**Step 3: Calculate Limit Price**
+**步骤3：计算限价**
 ```rust
 // From: src/main.rs process_order()
 if side_is_buy:
-    limit_price = min(whale_price + total_buffer, 0.99)  // Cap at 0.99
+    limit_price = min(whale_price + total_buffer, 0.99)  // 上限为0.99
 else:  // SELL
-    limit_price = max(whale_price - total_buffer, 0.01)  // Floor at 0.01
+    limit_price = max(whale_price - total_buffer, 0.01)  // 下限为0.01
 ```
 
-**Complete Example:**
+**完整示例：**
 ```
-Whale Trade: BUY 5,000 shares @ $0.55 (Tennis Market)
+鲸鱼交易：买入 5,000股 @ $0.55（网球市场）
 
-Step 1: base_buffer = 0.01 (4000+ tier)
-Step 2: tennis_buffer = 0.01 (tennis market detected)
+步骤1：base_buffer = 0.01 (4000+层级)
+步骤2：tennis_buffer = 0.01 (检测到网球市场)
         total_buffer = 0.01 + 0.01 = 0.02
-Step 3: limit_price = min(0.55 + 0.02, 0.99) = 0.57
+步骤3：limit_price = min(0.55 + 0.02, 0.99) = 0.57
         
-Final Limit Price: $0.57 (0.02 above whale's $0.55)
+最终限价：$0.57（比鲸鱼的$0.55高0.02）
 ```
 
-### 4.3 Risk Guard (Circuit Breaker) Logic (Detailed)
+### 4.3 风险防护（断路器）逻辑（详细）
 
-**Layer 1: Fast Path Check**
+**第1层：快速路径检查**
 ```rust
 // From: src/risk_guard.rs check_fast()
 pub fn check_fast(&mut self, token_id: &str, shares: f64) -> SafetyEvaluation {
-    // Check if token is currently tripped
+    // 检查代币当前是否跳闸
     if let Some(tripped_until) = self.tokens.get(token_id)
         .and_then(|state| state.tripped_until) {
         if Instant::now() < tripped_until {
@@ -630,8 +630,8 @@ pub fn check_fast(&mut self, token_id: &str, shares: f64) -> SafetyEvaluation {
         }
     }
     
-    // Check if trade is large enough to trigger sequence check
-    if shares < self.config.large_trade_shares {  // Default: 1500.0
+    // 检查交易是否足够大以触发序列检查
+    if shares < self.config.large_trade_shares {  // 默认：1500.0
         return SafetyEvaluation {
             decision: SafetyDecision::Allow,
             reason: SafetyReason::SmallTrade,
@@ -639,13 +639,13 @@ pub fn check_fast(&mut self, token_id: &str, shares: f64) -> SafetyEvaluation {
         };
     }
     
-    // Add to sequence history
+    // 添加到序列历史
     self.add_to_sequence(token_id, shares);
     
-    // Count consecutive large trades in window
+    // 计算窗口内的连续大交易数量
     let count = self.count_in_window(token_id, self.config.sequence_window);  // 30s
     
-    if count >= self.config.consecutive_trigger {  // Default: 2
+    if count >= self.config.consecutive_trigger {  // 默认：2
         return SafetyEvaluation {
             decision: SafetyDecision::FetchBook,
             reason: SafetyReason::SeqNeedBook { count },
@@ -661,7 +661,7 @@ pub fn check_fast(&mut self, token_id: &str, shares: f64) -> SafetyEvaluation {
 }
 ```
 
-**Layer 2: Order Book Depth Check**
+**第2层：订单簿深度检查**
 ```rust
 // From: src/risk_guard.rs check_with_book()
 pub fn check_with_book(
@@ -670,8 +670,8 @@ pub fn check_with_book(
     consecutive_count: u8, 
     depth_usd: f64
 ) -> SafetyEvaluation {
-    if depth_usd < self.config.min_depth_beyond_usd {  // Default: $200
-        // Trip the token (block for duration)
+    if depth_usd < self.config.min_depth_beyond_usd {  // 默认：$200
+        // 跳闸代币（在持续时间内阻止）
         self.trip(token_id);
         
         SafetyEvaluation {
@@ -695,31 +695,31 @@ pub fn check_with_book(
 }
 ```
 
-**Depth Calculation:**
+**深度计算：**
 ```rust
 // From: src/risk_guard.rs calc_liquidity_depth()
 pub fn calc_liquidity_depth(
     side: TradeSide, 
-    levels: &[(f64, f64)],  // (price, size) tuples
+    levels: &[(f64, f64)],  // (价格, 规模) 元组
     threshold: f64
 ) -> f64 {
-    // Adjust threshold by 0.5% for safety margin
+    // 为安全边际调整阈值0.5%
     let threshold_adj = if side == TradeSide::Buy {
-        threshold * 1.005  // Buy: check slightly above
+        threshold * 1.005  // 买入：检查略高于阈值
     } else {
-        threshold * 0.995  // Sell: check slightly below
+        threshold * 0.995  // 卖出：检查略低于阈值
     };
     
     let mut total_usd = 0.0;
     for &(price, size) in levels {
         let beyond = if side == TradeSide::Buy {
-            price > threshold_adj  // Asks above threshold
+            price > threshold_adj  // 卖价高于阈值
         } else {
-            price < threshold_adj  // Bids below threshold
+            price < threshold_adj  // 买价低于阈值
         };
         
         if beyond {
-            total_usd += price * size;  // Add USD value
+            total_usd += price * size;  // 添加USD价值
         }
     }
     
@@ -727,32 +727,32 @@ pub fn calc_liquidity_depth(
 }
 ```
 
-**Example Risk Check Flow:**
+**风险检查流程示例：**
 ```
-Event: Whale buys 2,000 shares @ $0.50
+事件：鲸鱼买入 2,000股 @ $0.50
 
-Step 1: check_fast()
+步骤1：check_fast()
   - shares (2000) >= large_trade_threshold (1500) ✓
-  - Add to sequence history
-  - Count in 30s window: 2 trades
+  - 添加到序列历史
+  - 30秒窗口内计数：2笔交易
   - 2 >= consecutive_trigger (2) ✓
-  → Decision: FetchBook (need depth check)
+  → 决策：FetchBook（需要深度检查）
   
-Step 2: Fetch order book
-  - Get asks at prices > $0.50
-  - Calculate depth: $450 USD
+步骤2：获取订单簿
+  - 获取价格 > $0.50的卖单
+  - 计算深度：$450 USD
   
-Step 3: check_with_book()
+步骤3：check_with_book()
   - depth ($450) >= min_depth ($200) ✓
-  → Decision: Allow (trade passes)
+  → 决策：允许（交易通过）
 ```
 
-### 4.4 Resubmission Logic (Detailed Algorithm)
+### 4.4 重新提交逻辑（详细算法）
 
-**Initial Order Submission:**
+**初始订单提交：**
 ```rust
 // From: src/main.rs process_order()
-// First attempt: FAK order
+// 第一次尝试：FAK订单
 let args = OrderArgs {
     token_id: token_id,
     price: limit_price,
@@ -764,13 +764,13 @@ let args = OrderArgs {
 
 let response = client.post_order_fast(body, creds)?;
 
-// Parse response
+// 解析响应
 if response.status().is_success() {
     let order_resp: OrderResponse = serde_json::from_str(&response.text())?;
     let filled_shares: f64 = order_resp.taking_amount.parse().unwrap_or(0.0);
     
     if filled_shares < requested_size {
-        // Partial fill → resubmit remaining
+        // 部分成交 → 重新提交剩余
         let remaining = requested_size - filled_shares;
         if remaining >= minimum_threshold {
             send_resubmit_request(...);
@@ -779,7 +779,7 @@ if response.status().is_success() {
 }
 ```
 
-**Resubmission Price Escalation:**
+**重新提交价格升级：**
 ```rust
 // From: src/main.rs resubmit_worker()
 fn calculate_resubmit_price(
@@ -788,31 +788,31 @@ fn calculate_resubmit_price(
     current_price: f64,
     max_price: f64
 ) -> f64 {
-    // Only large trades (4000+) chase on first attempt
+    // 仅大交易（4000+）在第一次尝试时追逐
     let should_chase = if whale_shares >= 4000.0 {
-        attempt == 1  // Only attempt 1
+        attempt == 1  // 仅尝试1
     } else {
-        false  // Never chase
+        false  // 从不追逐
     };
     
     let increment = if should_chase {
         RESUBMIT_PRICE_INCREMENT  // +0.01
     } else {
-        0.0  // Flat retry
+        0.0  // 平重试
     };
     
     let new_price = current_price + increment;
     
-    // Don't exceed max buffer
+    // 不超过最大缓冲
     if new_price > max_price {
-        return max_price;  // Cap at max
+        return max_price;  // 上限为最大值
     }
     
     new_price
 }
 ```
 
-**Resubmission Attempt Flow:**
+**重新提交尝试流程：**
 ```rust
 // From: src/main.rs resubmit_worker()
 let max_attempts = if whale_shares >= 4000.0 { 5 } else { 4 };
@@ -820,31 +820,31 @@ let max_attempts = if whale_shares >= 4000.0 { 5 } else { 4 };
 for attempt in 1..=max_attempts {
     let is_last = attempt == max_attempts;
     
-    // Calculate price
+    // 计算价格
     let price = calculate_resubmit_price(...);
     
-    // Submit order
+    // 提交订单
     let (success, body, filled) = submit_resubmit_order(...);
     
     if success {
         if is_last {
-            // GTD order placed (may fill later)
+            // GTD订单已挂单（可能稍后成交）
             return "GTD_SUBMITTED";
         } else {
-            // FAK order: check fill
+            // FAK订单：检查成交
             if filled >= remaining_size {
                 return "FULLY_FILLED";
             } else {
-                // Partial fill: continue with remaining
+                // 部分成交：继续处理剩余
                 remaining_size -= filled;
                 continue;
             }
         }
     } else {
-        // Failure: retry if not last attempt
+        // 失败：如果不是最后一次尝试则重试
         if !is_last {
             if whale_shares < 1000.0 {
-                sleep(50ms);  // Small trades: delay
+                sleep(50ms);  // 小交易：延迟
             }
             continue;
         } else {
@@ -854,68 +854,68 @@ for attempt in 1..=max_attempts {
 }
 ```
 
-**Complete Resubmission Example:**
+**完整重新提交示例：**
 ```
-Initial Order: 250 shares @ $0.57 (FAK)
-Result: Partially filled (150 shares filled, 100 remaining)
+初始订单：250股 @ $0.57 (FAK)
+结果：部分成交（150股成交，剩余100股）
 
-Attempt 1 (FAK, price +0.01):
-  Price: $0.58 (chased +0.01 for 4000+ tier)
-  Result: Failed (no fill)
-  Delay: None (large trade)
+尝试1 (FAK, 价格+0.01):
+  价格：$0.58（4000+层级追逐+0.01）
+  结果：失败（未成交）
+  延迟：无（大交易）
   
-Attempt 2 (FAK, same price):
-  Price: $0.58 (flat retry)
-  Result: Filled 50 shares
-  Remaining: 50 shares
+尝试2 (FAK, 相同价格):
+  价格：$0.58（平重试）
+  结果：成交50股
+  剩余：50股
   
-Attempt 3 (FAK, same price):
-  Price: $0.58 (flat retry)
-  Result: Filled 30 shares
-  Remaining: 20 shares
+尝试3 (FAK, 相同价格):
+  价格：$0.58（平重试）
+  结果：成交30股
+  剩余：20股
   
-Attempt 4 (FAK, same price):
-  Price: $0.58 (flat retry)
-  Result: Failed
+尝试4 (FAK, 相同价格):
+  价格：$0.58（平重试）
+  结果：失败
   
-Attempt 5 (GTD, same price):
-  Price: $0.58
-  Type: GTD (expires in 61s if live market)
-  Result: Order placed on book (may fill later)
+尝试5 (GTD, 相同价格):
+  价格：$0.58
+  类型：GTD（如果是活跃市场则61秒后过期）
+  结果：订单已挂单（可能稍后成交）
   
-Total Filled: 230/250 shares (92%)
+总成交：230/250股（92%）
 ```
 
-### 4.5 Market Detection and Cache System
+### 4.5 市场检测和缓存系统
 
-**Cache Structure:**
+**缓存结构：**
 ```rust
 // From: src/market_cache.rs
 pub struct MarketCaches {
-    pub neg_risk: RwLock<FxHashMap<String, bool>>,      // Token → neg_risk flag
-    pub slugs: RwLock<FxHashMap<String, String>>,       // Token → market slug
-    pub tennis_tokens: RwLock<FxHashMap<String, String>>, // Token → category
-    pub soccer_tokens: RwLock<FxHashMap<String, ()>>,   // Token → marker
-    pub live_status: RwLock<FxHashMap<String, bool>>,   // Token → is_live
+    pub neg_risk: RwLock<FxHashMap<String, bool>>,      // 代币 → neg_risk标志
+    pub slugs: RwLock<FxHashMap<String, String>>,       // 代币 → 市场slug
+    pub tennis_tokens: RwLock<FxHashMap<String, String>>, // 代币 → 类别
+    pub soccer_tokens: RwLock<FxHashMap<String, ()>>,   // 代币 → 标记
+    pub live_status: RwLock<FxHashMap<String, bool>>,   // 代币 → is_live
 }
 ```
 
-**Cache Lookup Flow:**
+**缓存查找流程：**
 ```rust
-// Step 1: Check if token is tennis market
+// 步骤1：检查代币是否是网球市场
 pub fn get_tennis_token_buffer(token_id: &str) -> f64 {
     global_caches().tennis_tokens.read()
         .map(|cache| {
             if cache.contains_key(token_id) {
-                0.01  // Tennis markets get +0.01 buffer
+                0.01  // 网球市场获得+0.01缓冲
             } else {
-                0.0   // Not a tennis market
+                0.0   // 不是网球市场
             }
         })
         .unwrap_or(0.0)
 }
 
-// Step 2: Check live status for GTD expiration
+// 步骤2：检查活跃状态以确定GTD过期时间
 pub fn get_is_live(token_id: &str) -> Option<bool> {
     global_caches().live_status.read()
         .ok()?
@@ -923,155 +923,155 @@ pub fn get_is_live(token_id: &str) -> Option<bool> {
         .copied()
 }
 
-// Step 3: Use live status to determine expiration
+// 步骤3：使用活跃状态确定过期时间
 pub fn get_gtd_expiry_secs(is_live: bool) -> u64 {
     if is_live {
-        61      // Live: fast expiration (1 minute)
+        61      // 活跃：快速过期（1分钟）
     } else {
-        1800    // Non-live: patient (30 minutes)
+        1800    // 非活跃：耐心（30分钟）
     }
 }
 ```
 
-## 5. Strategy Rationale
+## 5. 策略原理
 
-### 5.1 Why 2% Scaling?
-- **Risk Management:** Limits exposure while maintaining meaningful position sizes
-- **Capital Efficiency:** Allows copying whales with much larger accounts
-- **Practical:** Most users can comfortably trade at 2% scale
-- **Mathematical:** 2% provides good balance between participation and risk
+### 5.1 为什么是2%缩放？
+- **风险管理：** 限制敞口同时保持有意义的仓位规模
+- **资金效率：** 允许复制账户大得多的鲸鱼
+- **实用性：** 大多数用户可以舒适地以2%规模交易
+- **数学性：** 2%在参与和风险之间提供了良好的平衡
 
-### 5.2 Why Tiered Execution?
-- **Size Matters:** Larger trades indicate stronger conviction → more aggressive
-- **Cost Optimization:** Smaller trades don't need aggressive execution → save on slippage
-- **Fill Rate Optimization:** Different strategies optimize for different trade sizes
-- **Market Impact:** Tiered approach minimizes market impact while maximizing fills
+### 5.2 为什么需要分层执行？
+- **规模重要：** 更大的交易表明更强的信念 → 更激进
+- **成本优化：** 小交易不需要激进执行 → 节省滑点
+- **成交率优化：** 不同策略优化不同交易规模
+- **市场影响：** 分层方法最小化市场影响同时最大化成交
 
-### 5.3 Why Price Buffers?
-- **Fill Rate:** Improves probability of order execution
-- **Time Sensitivity:** Large trades are often time-sensitive → buffer worth it
-- **Market Impact:** Small buffer minimizes market impact while ensuring fills
-- **Statistical Edge:** Small premium paid is offset by higher fill probability
+### 5.3 为什么需要价格缓冲？
+- **成交率：** 提高订单执行概率
+- **时间敏感性：** 大交易通常是时间敏感的 → 缓冲值得
+- **市场影响：** 小缓冲最小化市场影响同时确保成交
+- **统计优势：** 支付的小溢价被更高的成交概率抵消
 
-### 5.4 Why Risk Guard System?
-- **Protection:** Prevents copying during manipulation or low liquidity
-- **Automated:** No manual intervention needed
-- **Adaptive:** Resets automatically after conditions normalize
-- **Multi-Layer:** Multiple checks catch different types of risks
+### 5.4 为什么需要风险防护系统？
+- **保护：** 防止在操纵或低流动性期间复制
+- **自动化：** 无需手动干预
+- **自适应：** 条件正常化后自动重置
+- **多层：** 多个检查捕获不同类型的风险
 
-### 5.5 Why Resubmission?
-- **Market Conditions:** Order book changes rapidly → retries catch better prices
-- **Partial Fills:** Common in volatile markets → resubmit remaining size
-- **Tiered Approach:** Different strategies for different trade sizes
-- **Persistence:** Final GTD attempt allows market to come to your price
+### 5.5 为什么需要重新提交？
+- **市场条件：** 订单簿快速变化 → 重试捕获更好的价格
+- **部分成交：** 在波动市场中常见 → 重新提交剩余规模
+- **分层方法：** 不同交易规模采用不同策略
+- **坚持：** 最终GTD尝试允许市场达到您的价格
 
-### 5.6 Probabilistic Sizing Explained
+### 5.6 概率性规模解释
 
-**Purpose:**
-Prevents negative expected value trades when the calculated position size is below the minimum required order size ($1.01).
+**目的：**
+当计算的仓位规模低于所需的最小订单规模（$1.01）时，防止负预期价值交易。
 
-**When It Triggers:**
-- When `scaled_target < minimum_size`
-- Only if `USE_PROBABILISTIC_SIZING = true` (default: true)
+**何时触发：**
+- 当`scaled_target < minimum_size`
+- 仅当`USE_PROBABILISTIC_SIZING = true`时（默认：true）
 
-**How It Works:**
-1. Calculate probability: `p = scaled_target / minimum_size`
-2. Generate random number: `r = random() ∈ [0, 1)`
-3. If `r < p`: Execute with `minimum_size` (PROB_HIT)
-4. If `r >= p`: Skip trade (PROB_SKIP)
+**工作原理：**
+1. 计算概率：`p = scaled_target / minimum_size`
+2. 生成随机数：`r = random() ∈ [0, 1)`
+3. 如果`r < p`：以`minimum_size`执行（PROB_HIT）
+4. 如果`r >= p`：跳过交易（PROB_SKIP）
 
-**Example Scenarios:**
+**示例场景：**
 
-**Scenario A: 60% Probability**
+**场景A：60%概率**
 ```
-scaled_target = 0.6 shares
-minimum_size = 1.0 share
-probability = 0.6 / 1.0 = 0.6 (60%)
+scaled_target = 0.6股
+minimum_size = 1.0股
+概率 = 0.6 / 1.0 = 0.6 (60%)
 
-Result: 60% chance to execute 1.0 share, 40% chance to skip
-```
-
-**Scenario B: 80% Probability**
-```
-scaled_target = 0.8 shares  
-minimum_size = 1.0 share
-probability = 0.8 / 1.0 = 0.8 (80%)
-
-Result: 80% chance to execute 1.0 share, 20% chance to skip
+结果：60%机会执行1.0股，40%机会跳过
 ```
 
-**Scenario C: 20% Probability**
+**场景B：80%概率**
 ```
-scaled_target = 0.2 shares
-minimum_size = 1.0 share
-probability = 0.2 / 1.0 = 0.2 (20%)
+scaled_target = 0.8股  
+minimum_size = 1.0股
+概率 = 0.8 / 1.0 = 0.8 (80%)
 
-Result: 20% chance to execute 1.0 share, 80% chance to skip
+结果：80%机会执行1.0股，20%机会跳过
 ```
 
-**Why This Works:**
-- Ensures expected order size = `scaled_target` over many trades
-- Prevents consistently losing money on tiny trades
-- Still allows occasional participation in small whale trades
-- Maintains risk profile while avoiding dust orders
+**场景C：20%概率**
+```
+scaled_target = 0.2股
+minimum_size = 1.0股
+概率 = 0.2 / 1.0 = 0.2 (20%)
 
-## 6. Complete Strategy Logic Flow (Pseudo-Code)
+结果：20%机会执行1.0股，80%机会跳过
+```
 
-### 6.1 Main Execution Loop
+**为什么这有效：**
+- 确保多次交易后的预期订单规模 = `scaled_target`
+- 防止在微小交易上持续亏损
+- 仍允许偶尔参与小鲸鱼交易
+- 在避免灰尘订单的同时保持风险状况
+
+## 6. 完整策略逻辑流程（伪代码）
+
+### 6.1 主执行循环
 
 ```rust
-// Main bot loop (simplified)
+// 主机器人循环（简化）
 loop {
-    // 1. Receive blockchain event via WebSocket
+    // 1. 通过WebSocket接收区块链事件
     event = receive_blockchain_event();
     
-    // 2. Parse and validate event
+    // 2. 解析和验证事件
     if !is_valid_event(event) { continue; }
     if !is_from_target_whale(event) { continue; }
     
     parsed_event = parse_event(event);
     
-    // 3. Process order asynchronously
+    // 3. 异步处理订单
     spawn(handle_event(parsed_event));
 }
 ```
 
-### 6.2 Event Handling Flow
+### 6.2 事件处理流程
 
 ```rust
 async fn handle_event(event: ParsedEvent) {
-    // Step 1: Get market information
+    // 步骤1：获取市场信息
     is_live = market_cache::get_is_live(&event.token_id);
     
-    // Step 2: Submit order
+    // 步骤2：提交订单
     status = order_engine.submit(event, is_live).await;
     
-    // Step 3: Log result
+    // 步骤3：记录结果
     log_to_csv(event, status);
     print_console(event, status);
 }
 ```
 
-### 6.3 Order Processing Logic
+### 6.3 订单处理逻辑
 
 ```rust
 fn process_order(order_info: &OrderInfo) -> String {
-    // FILTER 1: Skip disabled trading
+    // 过滤器1：跳过禁用的交易
     if !enable_trading { return "SKIPPED_DISABLED"; }
     if mock_trading { return "MOCK_ONLY"; }
     
-    // FILTER 2: Minimum trade size
+    // 过滤器2：最小交易规模
     if order_info.shares < MIN_WHALE_SHARES_TO_COPY {
         return "SKIPPED_SMALL";
     }
     
-    // RISK CHECK 1: Fast path (no book fetch)
+    // 风险检查1：快速路径（不获取订单簿）
     let eval = risk_guard.check_fast(&token_id, shares);
     
     match eval.decision {
         SafetyDecision::Block => return "RISK_BLOCKED";
         SafetyDecision::FetchBook => {
-            // RISK CHECK 2: Fetch order book and check depth
+            // 风险检查2：获取订单簿并检查深度
             let depth = fetch_book_depth(...);
             let final_eval = risk_guard.check_with_book(...);
             if final_eval.decision == SafetyDecision::Block {
@@ -1081,7 +1081,7 @@ fn process_order(order_info: &OrderInfo) -> String {
         SafetyDecision::Allow => {}
     }
     
-    // CALCULATE: Position size
+    // 计算：仓位规模
     let (buffer, order_type, size_multiplier) = get_tier_params(shares, is_buy, token_id);
     let (my_shares, size_type) = calculate_safe_size(shares, price, size_multiplier);
     
@@ -1089,398 +1089,397 @@ fn process_order(order_info: &OrderInfo) -> String {
         return "SKIPPED_PROBABILITY";
     }
     
-    // CALCULATE: Limit price
+    // 计算：限价
     let limit_price = if is_buy {
         min(whale_price + buffer, 0.99)
     } else {
         max(whale_price - buffer, 0.01)
     };
     
-    // SUBMIT: Create and submit order
+    // 提交：创建并提交订单
     let order = create_order(token_id, limit_price, my_shares, order_type);
     let response = submit_order(order);
     
-    // HANDLE: Process response
+    // 处理：处理响应
     if response.success {
         if response.filled < my_shares {
-            // Partial fill → resubmit remaining
+            // 部分成交 → 重新提交剩余
             schedule_resubmit(...);
         }
         return format!("SUCCESS: {} filled", response.filled);
     } else {
-        // Failure → schedule resubmit
+        // 失败 → 安排重新提交
         schedule_resubmit(...);
         return "RESUBMITTING";
     }
 }
 ```
 
-### 6.4 Decision Tree Visualization
+### 6.4 决策树可视化
 
 ```
-START: Blockchain Event Received
+开始：收到区块链事件
 │
-├─ [Is from target whale?]
-│  ├─ NO → SKIP (ignore event)
-│  └─ YES → Continue
+├─ [来自目标鲸鱼？]
+│  ├─ 否 → 跳过（忽略事件）
+│  └─ 是 → 继续
 │
-├─ [Is valid trade data?]
-│  ├─ NO → SKIP (invalid data)
-│  └─ YES → Continue
+├─ [有效交易数据？]
+│  ├─ 否 → 跳过（无效数据）
+│  └─ 是 → 继续
 │
-├─ [Trade size >= minimum?]
-│  ├─ NO → SKIP (SKIPPED_SMALL)
-│  └─ YES → Continue
+├─ [交易规模 >= 最小？]
+│  ├─ 否 → 跳过（SKIPPED_SMALL）
+│  └─ 是 → 继续
 │
-├─ RISK CHECK LAYER 1: Fast Check
-│  ├─ Token tripped? → YES → BLOCK (RISK_BLOCKED: TRIPPED)
-│  ├─ Trade too small? → YES → ALLOW (fast path)
-│  └─ Large trade? → YES → Check sequence
+├─ 风险检查第1层：快速检查
+│  ├─ 代币跳闸？ → 是 → 阻止（RISK_BLOCKED: TRIPPED）
+│  ├─ 交易太小？ → 是 → 允许（快速路径）
+│  └─ 大交易？ → 是 → 检查序列
 │     │
-│     ├─ [Sequence triggered? (2+ large trades in 30s)]
-│     │  ├─ YES → Fetch book for depth check
-│     │  └─ NO → ALLOW (continue)
+│     ├─ [序列触发？（30秒内2+大交易）]
+│     │  ├─ 是 → 获取订单簿进行深度检查
+│     │  └─ 否 → 允许（继续）
 │
-├─ RISK CHECK LAYER 2: Depth Check (if triggered)
-│  ├─ Fetch order book
-│  ├─ Calculate liquidity depth
-│  ├─ [Depth >= $200?]
-│  │  ├─ NO → BLOCK (RISK_BLOCKED: INSUFFICIENT_DEPTH)
-│  │  └─ YES → ALLOW (continue)
+├─ 风险检查第2层：深度检查（如触发）
+│  ├─ 获取订单簿
+│  ├─ 计算流动性深度
+│  ├─ [深度 >= $200？]
+│  │  ├─ 否 → 阻止（RISK_BLOCKED: INSUFFICIENT_DEPTH）
+│  │  └─ 是 → 允许（继续）
 │
-├─ POSITION SIZING
-│  ├─ Calculate base: whale_shares × 0.02
-│  ├─ Apply tier multiplier
-│  ├─ Check minimum size requirement
-│  ├─ [Probabilistic sizing needed?]
-│  │  ├─ YES → Random decision (may skip)
-│  │  └─ NO → Use calculated size
+├─ 仓位规模
+│  ├─ 计算基础：whale_shares × 0.02
+│  ├─ 应用层级倍数
+│  ├─ 检查最小规模要求
+│  ├─ [需要概率性规模？]
+│  │  ├─ 是 → 随机决策（可能跳过）
+│  │  └─ 否 → 使用计算的规模
 │
-├─ PRICE CALCULATION
-│  ├─ Get base buffer from tier
-│  ├─ Add tennis buffer (if tennis market)
-│  ├─ Add soccer buffer (if soccer market)
-│  └─ Calculate limit price (clamp 0.01-0.99)
+├─ 价格计算
+│  ├─ 从层级获取基础缓冲
+│  ├─ 添加网球缓冲（如果是网球市场）
+│  ├─ 添加足球缓冲（如果是足球市场）
+│  └─ 计算限价（限制到0.01-0.99）
 │
-├─ ORDER TYPE SELECTION
-│  ├─ [Is SELL?]
-│  │  ├─ YES → GTD order
-│  │  └─ NO → FAK order (for BUY)
+├─ 订单类型选择
+│  ├─ [是卖出？]
+│  │  ├─ 是 → GTD订单
+│  │  └─ 否 → FAK订单（对于买入）
 │
-├─ ORDER SUBMISSION
-│  ├─ Create signed order
-│  ├─ Submit to Polymarket API
-│  └─ Receive response
+├─ 订单提交
+│  ├─ 创建签名订单
+│  ├─ 提交到Polymarket API
+│  └─ 接收响应
 │
-├─ RESPONSE HANDLING
-│  ├─ [Success?]
-│  │  ├─ YES → Check fill amount
-│  │  │  ├─ Fully filled → DONE ✅
-│  │  │  ├─ Partially filled → Resubmit remaining
-│  │  │  └─ Not filled → Schedule retry
-│  │  └─ NO → Schedule retry
+├─ 响应处理
+│  ├─ [成功？]
+│  │  ├─ 是 → 检查成交数量
+│  │  │  ├─ 完全成交 → 完成 ✅
+│  │  │  ├─ 部分成交 → 重新提交剩余
+│  │  │  └─ 未成交 → 安排重试
+│  │  └─ 否 → 安排重试
 │
-├─ RESUBMISSION LOOP (if needed)
-│  ├─ Calculate retry price (with/without increment)
-│  ├─ Check max attempts
-│  ├─ Submit retry order
-│  └─ Repeat until filled or max attempts
+├─ 重新提交循环（如需要）
+│  ├─ 计算重试价格（带/不带增量）
+│  ├─ 检查最大尝试
+│  ├─ 提交重试订单
+│  └─ 重复直到成交或最大尝试
 │
-└─ FINAL ATTEMPT (if not filled)
-   ├─ Switch to GTD order
-   ├─ Set expiration (61s live / 1800s non-live)
-   └─ Place on order book
+└─ 最终尝试（如果未成交）
+   ├─ 切换到GTD订单
+   ├─ 设置过期时间（活跃61秒 / 非活跃1800秒）
+   └─ 挂单
 ```
 
-### 6.5 Strategy Parameters and Their Impact
+### 6.5 策略参数及其影响
 
-**Position Sizing Parameters:**
+**仓位规模参数：**
 
-| Parameter | Value | Impact if Increased | Impact if Decreased |
+| 参数 | 值 | 如果增加的影响 | 如果减少的影响 |
 |-----------|-------|---------------------|---------------------|
-| `SCALING_RATIO` | 0.02 (2%) | More exposure, higher risk | Less exposure, lower risk |
-| `MIN_WHALE_SHARES_TO_COPY` | 10.0 | Fewer trades, larger average size | More trades, smaller average size |
-| `MIN_CASH_VALUE` | $1.01 | Filters more small trades | Allows more small trades |
-| Size Multiplier (4000+ tier) | 1.25x | Larger positions on big trades | Smaller positions on big trades |
+| `SCALING_RATIO` | 0.02 (2%) | 更多敞口，更高风险 | 更少敞口，更低风险 |
+| `MIN_WHALE_SHARES_TO_COPY` | 10.0 | 更少交易，更大平均规模 | 更多交易，更小平均规模 |
+| `MIN_CASH_VALUE` | $1.01 | 过滤更多小交易 | 允许更多小交易 |
+| 规模倍数（4000+层级） | 1.25倍 | 大交易上更大仓位 | 大交易上更小仓位 |
 
-**Price Buffer Parameters:**
+**价格缓冲参数：**
 
-| Parameter | Value | Impact if Increased | Impact if Decreased |
+| 参数 | 值 | 如果增加的影响 | 如果减少的影响 |
 |-----------|-------|---------------------|---------------------|
-| Base Buffer (4000+ tier) | +0.01 | Higher fill rate, more slippage | Lower fill rate, less slippage |
-| Base Buffer (2000-3999) | +0.01 | Higher fill rate, more slippage | Lower fill rate, less slippage |
-| Tennis Buffer | +0.01 | Better fills on tennis, more cost | Worse fills on tennis, less cost |
-| Soccer Buffer | +0.01 | Better fills on soccer, more cost | Worse fills on soccer, less cost |
+| 基础缓冲（4000+层级） | +0.01 | 更高成交率，更多滑点 | 更低成交率，更少滑点 |
+| 基础缓冲（2000-3999） | +0.01 | 更高成交率，更多滑点 | 更低成交率，更少滑点 |
+| 网球缓冲 | +0.01 | 网球上更好成交，更多成本 | 网球上更差成交，更少成本 |
+| 足球缓冲 | +0.01 | 足球上更好成交，更多成本 | 足球上更差成交，更少成本 |
 
-**Risk Management Parameters:**
+**风险管理参数：**
 
-| Parameter | Value | Impact if Increased | Impact if Decreased |
+| 参数 | 值 | 如果增加的影响 | 如果减少的影响 |
 |-----------|-------|---------------------|---------------------|
-| `CB_LARGE_TRADE_SHARES` | 1500.0 | Fewer large trades detected | More large trades detected |
-| `CB_CONSECUTIVE_TRIGGER` | 2 | Less sensitive (more trades pass) | More sensitive (fewer trades pass) |
-| `CB_SEQUENCE_WINDOW_SECS` | 30 | Longer window (less sensitive) | Shorter window (more sensitive) |
-| `CB_MIN_DEPTH_USD` | $200.0 | More conservative (fewer trades) | Less conservative (more trades) |
-| `CB_TRIP_DURATION_SECS` | 120 | Longer block (more conservative) | Shorter block (less conservative) |
+| `CB_LARGE_TRADE_SHARES` | 1500.0 | 检测到更少大交易 | 检测到更多大交易 |
+| `CB_CONSECUTIVE_TRIGGER` | 2 | 不太敏感（更多交易通过） | 更敏感（更少交易通过） |
+| `CB_SEQUENCE_WINDOW_SECS` | 30 | 更长窗口（不太敏感） | 更短窗口（更敏感） |
+| `CB_MIN_DEPTH_USD` | $200.0 | 更保守（更少交易） | 不太保守（更多交易） |
+| `CB_TRIP_DURATION_SECS` | 120 | 更长阻止（更保守） | 更短阻止（不太保守） |
 
-## 7. Performance Considerations
+## 7. 性能考虑
 
-### 7.1 Latency Optimization
+### 7.1 延迟优化
 
-**WebSocket Connection:**
-- Real-time event monitoring (sub-second detection)
-- Automatic reconnection on failures
-- Heartbeat/keepalive mechanism
+**WebSocket连接：**
+- 实时事件监控（亚秒级检测）
+- 失败时自动重连
+- 心跳/保活机制
 
-**Parallel Processing:**
-- Order submission doesn't block event monitoring
-- Multiple orders can be processed concurrently
-- Async/await architecture for non-blocking I/O
+**并行处理：**
+- 订单提交不阻塞事件监控
+- 可以并发处理多个订单
+- 用于非阻塞I/O的异步/等待架构
 
-**Cache System:**
-- Market data cached to avoid API delays
-- Periodic refresh (every 30 minutes)
-- Thread-local storage for zero-allocation lookups
+**缓存系统：**
+- 缓存市场数据以避免API延迟
+- 定期刷新（每30分钟）
+- 线程本地存储用于零分配查找
 
-### 7.2 Execution Speed
+### 7.2 执行速度
 
-**Order Types:**
-- **FAK Orders:** Immediate execution or cancellation (<100ms)
-- **GTD Orders:** Placed on book (no immediate execution wait)
+**订单类型：**
+- **FAK订单：** 立即执行或取消（<100ms）
+- **GTD订单：** 挂单（不等待立即执行）
 
-**Optimized Paths:**
-- Different code paths for different scenarios
-- Hot path optimizations (minimal allocations)
-- Fast failure paths (skip checks when possible)
+**优化路径：**
+- 不同场景的不同代码路径
+- 热路径优化（最小分配）
+- 快速失败路径（可能时跳过检查）
 
-**Retry Delays:**
-- Large trades: Immediate retries (no delay)
-- Small trades (<1000 shares): 50ms delay between retries
-- Rationale: Small trades benefit from order book refresh time
+**重试延迟：**
+- 大交易：立即重试（无延迟）
+- 小交易（<1000股）：重试之间延迟50ms
+- 原理：小交易受益于订单簿刷新时间
 
-### 7.3 Resource Usage
+### 7.3 资源使用
 
-**Memory:**
-- Thread-local buffers (avoid heap allocations)
-- Cached data structures (bounded size)
-- Efficient data structures (FxHashMap for speed)
+**内存：**
+- 线程本地缓冲区（避免堆分配）
+- 缓存数据结构（有界大小）
+- 高效数据结构（FxHashMap用于速度）
 
-**CPU:**
-- Minimal parsing overhead
-- Efficient hex/JSON parsing
-- Optimized hot paths
+**CPU：**
+- 最小解析开销
+- 高效的十六进制/JSON解析
+- 优化的热路径
 
-**Network:**
-- Connection pooling (HTTP client)
-- Cached API responses
-- Minimized API calls
+**网络：**
+- 连接池（HTTP客户端）
+- 缓存的API响应
+- 最小化API调用
 
-## 8. Strategy Limitations
+## 8. 策略限制
 
-### 8.1 What the Strategy Does NOT Do
+### 8.1 策略不做什么
 
-- ❌ **Market Analysis:** No prediction or market research
-- ❌ **Portfolio Management:** No position rebalancing
-- ❌ **Stop-Loss/Take-Profit:** No automatic exit orders
-- ❌ **Position Monitoring:** No tracking after fill
-- ❌ **Exit Strategy:** You manage closing positions manually
-- ❌ **Multi-Whale:** Only copies one whale at a time
-- ❌ **Market Making:** Not a market maker strategy
-- ❌ **Arbitrage:** No cross-market arbitrage
+- ❌ **市场分析：** 无预测或市场研究
+- ❌ **投资组合管理：** 无仓位再平衡
+- ❌ **止损/止盈：** 无自动退出订单
+- ❌ **仓位监控：** 成交后无跟踪
+- ❌ **退出策略：** 您手动管理平仓
+- ❌ **多鲸鱼：** 一次只复制一个鲸鱼
+- ❌ **做市：** 不是做市商策略
+- ❌ **套利：** 无跨市场套利
 
-### 8.2 Known Limitations
+### 8.2 已知限制
 
-**Whale Dependency:**
-- Strategy effectiveness depends entirely on whale quality
-- If whale stops trading or performs poorly, bot mirrors that
-- No independent market analysis to verify trades
+**鲸鱼依赖性：**
+- 策略有效性完全取决于鲸鱼质量
+- 如果鲸鱼停止交易或表现不佳，机器人会反映这一点
+- 无独立市场分析来验证交易
 
-**Market Conditions:**
-- May underperform in highly volatile conditions
-- Copy trading inherently lags (always behind whale)
-- May struggle in low-liquidity markets
+**市场条件：**
+- 在高度波动条件下可能表现不佳
+- 跟单交易固有滞后（总是落后于鲸鱼）
+- 可能在低流动性市场中挣扎
 
-**Execution Limitations:**
-- Some slippage expected (especially large trades)
-- Fill rates <100% on some orders
-- Timing delay (always slightly behind whale)
+**执行限制：**
+- 预期会有一些滑点（特别是大交易）
+- 某些订单的成交率<100%
+- 时间延迟（总是略微落后于鲸鱼）
 
-**Capital Requirements:**
-- Need sufficient capital for 2% scaled positions
-- Must maintain gas fees (MATIC) balance
-- Large whale trades may require significant capital
+**资金要求：**
+- 需要足够的资金用于2%缩放的仓位
+- 必须维持gas费用（MATIC）余额
+- 大鲸鱼交易可能需要大量资金
 
-## 9. Optimization Tips
+## 9. 优化技巧
 
-### 9.1 For Better Fill Rates
+### 9.1 提高成交率
 
-**Monitor and Adjust:**
-- Track fill rates in CSV logs
-- Monitor whale's typical trade sizes
-- Adjust `SCALING_RATIO` if consistently missing fills
-- Consider increasing price buffers for specific markets
+**监控和调整：**
+- 在CSV日志中跟踪成交率
+- 监控鲸鱼的典型交易规模
+- 如果持续错过成交，调整`SCALING_RATIO`
+- 考虑为特定市场增加价格缓冲
 
-**Whale Selection:**
-- Choose whales with consistent trade sizes
-- Avoid whales that trade very large positions (may exceed your capital)
-- Monitor whale's success rate over time
+**鲸鱼选择：**
+- 选择交易规模一致的鲸鱼
+- 避免交易非常大仓位的鲸鱼（可能超过您的资金）
+- 随时间监控鲸鱼的成功率
 
-### 9.2 For Lower Slippage
+### 9.2 降低滑点
 
-**Price Buffer Optimization:**
-- Reduce price buffers for small trades if slippage is high
-- Monitor execution quality in CSV logs
-- Adjust tier thresholds if needed
-- Consider reducing buffers in high-volume markets
+**价格缓冲优化：**
+- 如果滑点高，减少小交易的价格缓冲
+- 在CSV日志中监控执行质量
+- 如需要调整层级阈值
+- 考虑在高成交量市场中减少缓冲
 
-**Tier Adjustment:**
-- Fine-tune tier boundaries if needed
-- Adjust size multipliers based on your risk tolerance
-- Monitor average slippage by tier
+**层级调整：**
+- 如需要微调层级边界
+- 根据您的风险承受能力调整规模倍数
+- 按层级监控平均滑点
 
-### 9.3 For Risk Management
+### 9.3 风险管理
 
-**Conservative Approach:**
-- Increase circuit breaker thresholds
-- Increase `CB_MIN_DEPTH_USD` for stricter liquidity requirements
-- Increase `CB_CONSECUTIVE_TRIGGER` to be less sensitive
-- Reduce `SCALING_RATIO` to lower exposure
+**保守方法：**
+- 增加断路器阈值
+- 增加`CB_MIN_DEPTH_USD`以更严格的流动性要求
+- 增加`CB_CONSECUTIVE_TRIGGER`以降低敏感性
+- 减少`SCALING_RATIO`以降低敞口
 
-**Monitoring:**
-- Monitor circuit breaker triggers in logs
-- Track reasons for blocked trades
-- Adjust parameters based on your risk profile
-- Review CSV logs regularly for patterns
+**监控：**
+- 在日志中监控断路器触发
+- 跟踪被阻止交易的原因
+- 根据您的风险状况调整参数
+- 定期审查CSV日志以查找模式
 
-## 10. Strategy Monitoring and Metrics
+## 10. 策略监控和指标
 
-### 10.1 Key Metrics to Track
+### 10.1 要跟踪的关键指标
 
-**Execution Metrics:**
-- **Fill Rate:** Percentage of orders that fully fill
-  - Target: >80% full fills
-  - Track: Partial fills vs full fills
+**执行指标：**
+- **成交率：** 完全成交的订单百分比
+  - 目标：>80%完全成交
+  - 跟踪：部分成交 vs 完全成交
   
-- **Average Slippage:** Difference between intended and actual fill price
-  - Calculate: `(actual_price - limit_price) / limit_price`
-  - Track by tier and market type
+- **平均滑点：** 预期和实际成交价格之间的差异
+  - 计算：`(actual_price - limit_price) / limit_price`
+  - 按层级和市场类型跟踪
 
-- **Execution Time:** Time from detection to fill
-  - Measure: Event timestamp → Fill timestamp
-  - Target: <2 seconds average
+- **执行时间：** 从检测到成交的时间
+  - 测量：事件时间戳 → 成交时间戳
+  - 目标：平均<2秒
 
-**Risk Metrics:**
-- **Circuit Breaker Triggers:** Frequency and reasons
-  - Track: How often and why trades are blocked
-  - Monitor: TRIPPED, INSUFFICIENT_DEPTH, etc.
+**风险指标：**
+- **断路器触发：** 频率和原因
+  - 跟踪：交易被阻止的频率和原因
+  - 监控：TRIPPED, INSUFFICIENT_DEPTH等
 
-- **Resubmission Rate:** How often orders need retries
-  - Track: Percentage of orders requiring resubmission
-  - Monitor: Average number of attempts needed
+- **重新提交率：** 订单需要重试的频率
+  - 跟踪：需要重新提交的订单百分比
+  - 监控：所需的平均尝试次数
 
-**Performance Metrics:**
-- **Total Trades Executed:** Count over time period
-- **Total Volume:** USD value of all trades
-- **Average Trade Size:** Mean position size
-- **Success Rate:** Percentage of profitable trades (requires manual tracking)
+**性能指标：**
+- **总执行交易：** 时间段内的计数
+- **总成交量：** 所有交易的USD价值
+- **平均交易规模：** 平均仓位规模
+- **成功率：** 盈利交易百分比（需要手动跟踪）
 
-### 10.2 Logging and Analysis
+### 10.2 日志记录和分析
 
-**CSV Log File (`matches_optimized.csv`):**
-- All detected and executed trades
-- Columns: timestamp, block, token_id, usd_value, shares, price, direction, status, order_book_data, tx_hash, is_live
-- Use for: Performance analysis, debugging, audit trail
+**CSV日志文件（`matches_optimized.csv`）：**
+- 所有检测和执行的交易
+- 列：timestamp, block, token_id, usd_value, shares, price, direction, status, order_book_data, tx_hash, is_live
+- 用于：性能分析、调试、审计跟踪
 
-**Console Output:**
-- Real-time execution status
-- Color-coded fill percentages
-- Market indicators (TENNIS, SOCCER, live status)
-- Best prices and order book data
+**控制台输出：**
+- 实时执行状态
+- 颜色编码的成交百分比
+- 市场指标（TENNIS, SOCCER, 活跃状态）
+- 最佳价格和订单簿数据
 
-**Analysis Recommendations:**
-- Review CSV logs weekly
-- Track metrics over time (weekly/monthly)
-- Compare performance across different whales
-- Identify patterns (time of day, market types, etc.)
+**分析建议：**
+- 每周审查CSV日志
+- 随时间跟踪指标（每周/每月）
+- 比较不同鲸鱼的性能
+- 识别模式（一天中的时间、市场类型等）
 
-## 11. Strategy Tuning Guide
+## 11. 策略调优指南
 
-### 11.1 When to Adjust Scaling Ratio
+### 11.1 何时调整缩放比例
 
-**Increase Scaling (More Aggressive):**
-- If you have excess capital
-- If whale is consistently profitable
-- If fill rates are high (>90%)
-- If you want higher exposure
+**增加缩放（更激进）：**
+- 如果您有超额资金
+- 如果鲸鱼持续盈利
+- 如果成交率高（>90%）
+- 如果您想要更高敞口
 
-**Decrease Scaling (More Conservative):**
-- If capital is limited
-- If experiencing losses
-- If fill rates are low (<70%)
-- If you want to test with smaller amounts
+**减少缩放（更保守）：**
+- 如果资金有限
+- 如果正在经历亏损
+- 如果成交率低（<70%）
+- 如果您想用较小金额测试
 
-### 11.2 When to Adjust Price Buffers
+### 11.2 何时调整价格缓冲
 
-**Increase Buffers:**
-- If fill rates are low
-- If missing many trades
-- If whale trades are time-sensitive
-- In volatile market conditions
+**增加缓冲：**
+- 如果成交率低
+- 如果错过许多交易
+- 如果鲸鱼交易是时间敏感的
+- 在波动市场条件下
 
-**Decrease Buffers:**
-- If slippage is high
-- If fill rates are already good (>85%)
-- In stable market conditions
-- To reduce costs
+**减少缓冲：**
+- 如果滑点高
+- 如果成交率已经很好（>85%）
+- 在稳定市场条件下
+- 为了降低成本
 
-### 11.3 When to Adjust Risk Guard Settings
+### 11.3 何时调整风险防护设置
 
-**More Conservative (Fewer Trades):**
-- Increase `CB_MIN_DEPTH_USD` (e.g., $300-500)
-- Increase `CB_CONSECUTIVE_TRIGGER` (e.g., 3-4)
-- Increase `CB_TRIP_DURATION_SECS` (e.g., 300s)
-- Decrease `CB_LARGE_TRADE_SHARES` (e.g., 1000.0)
+**更保守（更少交易）：**
+- 增加`CB_MIN_DEPTH_USD`（例如，$300-500）
+- 增加`CB_CONSECUTIVE_TRIGGER`（例如，3-4）
+- 增加`CB_TRIP_DURATION_SECS`（例如，300秒）
+- 减少`CB_LARGE_TRADE_SHARES`（例如，1000.0）
 
-**More Aggressive (More Trades):**
-- Decrease `CB_MIN_DEPTH_USD` (e.g., $100-150)
-- Decrease `CB_CONSECUTIVE_TRIGGER` (e.g., 1)
-- Decrease `CB_TRIP_DURATION_SECS` (e.g., 60s)
-- Increase `CB_LARGE_TRADE_SHARES` (e.g., 2000.0)
+**更激进（更多交易）：**
+- 减少`CB_MIN_DEPTH_USD`（例如，$100-150）
+- 减少`CB_CONSECUTIVE_TRIGGER`（例如，1）
+- 减少`CB_TRIP_DURATION_SECS`（例如，60秒）
+- 增加`CB_LARGE_TRADE_SHARES`（例如，2000.0）
 
-## 12. Future Enhancements (Potential)
+## 12. 未来增强功能（潜在）
 
-### 12.1 Multi-Whale Strategy
-- Copy multiple whales simultaneously
-- Portfolio allocation across whales
-- Risk diversification
-- Performance comparison
+### 12.1 多鲸鱼策略
+- 同时复制多个鲸鱼
+- 跨鲸鱼的投资组合分配
+- 风险分散
+- 性能比较
 
-### 12.2 Dynamic Scaling
-- Adjust scaling based on market conditions
-- Time-of-day adjustments
-- Volatility-based scaling
-- Performance-based scaling
+### 12.2 动态缩放
+- 根据市场条件调整缩放
+- 一天中的时间调整
+- 基于波动性的缩放
+- 基于性能的缩放
 
-### 12.3 Advanced Risk Management
-- Position limits per market
-- Daily loss limits
-- Win rate filters
-- Correlation analysis
+### 12.3 高级风险管理
+- 每个市场的仓位限制
+- 每日亏损限制
+- 胜率过滤器
+- 相关性分析
 
-### 12.4 Machine Learning Integration
-- Whale selection optimization
-- Trade prediction
-- Optimal entry/exit timing
-- Pattern recognition
+### 12.4 机器学习集成
+- 鲸鱼选择优化
+- 交易预测
+- 最佳入场/出场时机
+- 模式识别
 
-### 12.5 Exit Strategies
-- Automatic profit taking
-- Stop-loss implementation
-- Time-based exits
-- Trailing stops
+### 12.5 退出策略
+- 自动获利了结
+- 止损实施
+- 基于时间的退出
+- 追踪止损
 
-### 12.6 Analytics Dashboard
-- Real-time performance metrics
-- Visual trade analysis
-- Historical performance charts
-- Risk metrics visualization
-
+### 12.6 分析仪表板
+- 实时性能指标
+- 可视化交易分析
+- 历史性能图表
+- 风险指标可视化

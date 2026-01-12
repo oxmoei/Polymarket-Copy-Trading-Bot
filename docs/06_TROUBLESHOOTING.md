@@ -1,87 +1,87 @@
-# Troubleshooting Guide
+# 故障排除指南
 
-Common issues and their solutions.
+常见问题及其解决方案。
 
-## Table of Contents
+## 目录
 
-1. [Installation Issues](#1-installation-issues)
-2. [Configuration Issues](#2-configuration-issues)
-3. [Connection Issues](#3-connection-issues)
-4. [Trading Issues](#4-trading-issues)
-5. [Performance Issues](#5-performance-issues)
-6. [General Errors](#6-general-errors)
-7. [Getting More Help](#7-getting-more-help)
-8. [Prevention Tips](#8-prevention-tips)
-9. [Common Mistakes to Avoid](#9-common-mistakes-to-avoid)
+1. [安装问题](#1-安装问题)
+2. [配置问题](#2-配置问题)
+3. [连接问题](#3-连接问题)
+4. [交易问题](#4-交易问题)
+5. [性能问题](#5-性能问题)
+6. [一般错误](#6-一般错误)
+7. [获取更多帮助](#7-获取更多帮助)
+8. [预防提示](#8-预防提示)
+9. [常见错误避免](#9-常见错误避免)
 
 ---
 
-## 1. Installation Issues
+## 1. 安装问题
 
 ### "rustc: command not found"
 
-**Problem:** Rust is not installed or not in PATH.
+**问题：** Rust 未安装或不在 PATH 中。
 
-**Solution:**
-1. Install Rust from https://rustup.rs/
-2. Restart your terminal/PowerShell after installation
-3. Verify: `rustc --version`
+**解决方案：**
+1. 从 https://rustup.rs/ 安装 Rust
+2. 安装后重启终端/PowerShell
+3. 验证：`rustc --version`
 
-**Windows:** May need to restart computer after installation.
+**Windows：** 安装后可能需要重启计算机。
 
 ---
 
 ### "cargo: command not found"
 
-**Problem:** Cargo (Rust package manager) not found.
+**问题：** 找不到 Cargo（Rust 包管理器）。
 
-**Solution:**
-- Rust installation should include cargo automatically
-- If missing, reinstall Rust
-- Verify: `cargo --version`
+**解决方案：**
+- Rust 安装应自动包含 cargo
+- 如果缺失，重新安装 Rust
+- 验证：`cargo --version`
 
 ---
 
-### Build Errors: "failed to fetch" or network errors
+### 构建错误："failed to fetch" 或网络错误
 
-**Problem:** Can't download dependencies.
+**问题：** 无法下载依赖项。
 
-**Solution:**
-1. Check internet connection
-2. Try again (may be temporary network issue)
-3. If in restricted network, configure proxy:
+**解决方案：**
+1. 检查互联网连接
+2. 重试（可能是临时网络问题）
+3. 如果在受限网络中，配置代理：
    ```bash
-   # Set HTTP proxy
+   # 设置 HTTP 代理
    export HTTP_PROXY=http://proxy:port
    export HTTPS_PROXY=http://proxy:port
    ```
 
 ---
 
-### Build takes too long
+### 构建时间过长
 
-**Problem:** First build downloads many dependencies.
+**问题：** 首次构建会下载许多依赖项。
 
-**Solution:**
-- Normal for first build (5-15 minutes)
-- Subsequent builds are much faster
-- Use `--release` for optimized build (slower compile, faster runtime)
+**解决方案：**
+- 首次构建是正常的（5-15 分钟）
+- 后续构建会快得多
+- 使用 `--release` 进行优化构建（编译较慢，运行时较快）
 
 ---
 
-## 2. Configuration Issues
+## 2. 配置问题
 
 ### "PRIVATE_KEY env var is required"
 
-**Problem:** Private key not set in `.env` file.
+**问题：** `.env` 文件中未设置私钥。
 
-**Solution:**
-1. Check `.env` file exists
-2. Verify `PRIVATE_KEY=` line is present
-3. Make sure value has no quotes around it
-4. Remove any `0x` prefix if present
+**解决方案：**
+1. 检查 `.env` 文件是否存在
+2. 验证 `PRIVATE_KEY=` 行是否存在
+3. 确保值周围没有引号
+4. 如果存在 `0x` 前缀则删除
 
-**Correct format:**
+**正确格式：**
 ```env
 PRIVATE_KEY=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 ```
@@ -90,17 +90,17 @@ PRIVATE_KEY=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 
 ### "FUNDER_ADDRESS env var is required"
 
-**Problem:** Wallet address not set.
+**问题：** 未设置钱包地址。
 
-**Solution:**
-1. Check `.env` file has `FUNDER_ADDRESS=`
-2. Make sure it's your wallet address (40 hex chars)
-3. Can include or exclude `0x` prefix
+**解决方案：**
+1. 检查 `.env` 文件是否有 `FUNDER_ADDRESS=`
+2. 确保它是您的钱包地址（40 个十六进制字符）
+3. 可以包含或不包含 `0x` 前缀
 
-**Correct format:**
+**正确格式：**
 ```env
 FUNDER_ADDRESS=0x1234567890123456789012345678901234567890
-# Or
+# 或
 FUNDER_ADDRESS=1234567890123456789012345678901234567890
 ```
 
@@ -108,14 +108,14 @@ FUNDER_ADDRESS=1234567890123456789012345678901234567890
 
 ### "TARGET_WHALE_ADDRESS env var is required"
 
-**Problem:** Whale address not set.
+**问题：** 未设置鲸鱼地址。
 
-**Solution:**
-1. Set `TARGET_WHALE_ADDRESS=` in `.env`
-2. Must be 40 hex characters, **no `0x` prefix**
-3. Get address from Polymarket leaderboards or trader profiles
+**解决方案：**
+1. 在 `.env` 中设置 `TARGET_WHALE_ADDRESS=`
+2. 必须是 40 个十六进制字符，**无 `0x` 前缀**
+3. 从 Polymarket 排行榜或交易者个人资料获取地址
 
-**Correct format:**
+**正确格式：**
 ```env
 TARGET_WHALE_ADDRESS=204f72f35326db932158cba6adff0b9a1da95e14
 ```
@@ -124,445 +124,444 @@ TARGET_WHALE_ADDRESS=204f72f35326db932158cba6adff0b9a1da95e14
 
 ### "Set ALCHEMY_API_KEY or CHAINSTACK_API_KEY"
 
-**Problem:** No WebSocket provider API key set.
+**问题：** 未设置 WebSocket 提供商 API 密钥。
 
-**Solution:**
-1. Get API key from Alchemy (recommended) or Chainstack
-2. Add to `.env`:
+**解决方案：**
+1. 从 Alchemy（推荐）或 Chainstack 获取 API 密钥
+2. 添加到 `.env`：
    ```env
    ALCHEMY_API_KEY=your_key_here
    ```
-3. Or use Chainstack:
+3. 或使用 Chainstack：
    ```env
    CHAINSTACK_API_KEY=your_key_here
    ```
 
-**Note:** You only need one, not both.
+**注意：** 您只需要一个，不需要两个。
 
 ---
 
 ### "Invalid address format"
 
-**Problem:** Address has wrong format.
+**问题：** 地址格式错误。
 
-**Solution:**
-- **Private Key:** Must be exactly 64 hex characters, no `0x`
-- **FUNDER_ADDRESS:** 40 hex chars (can have `0x`)
-- **TARGET_WHALE_ADDRESS:** 40 hex chars, **no `0x`**
+**解决方案：**
+- **私钥：** 必须恰好是 64 个十六进制字符，无 `0x`
+- **FUNDER_ADDRESS：** 40 个十六进制字符（可以有 `0x`）
+- **TARGET_WHALE_ADDRESS：** 40 个十六进制字符，**无 `0x`**
 
-**Check:**
-- No extra spaces
-- No quotes around values
-- Correct length
-- Valid hex characters (0-9, a-f)
+**检查：**
+- 无额外空格
+- 值周围无引号
+- 长度正确
+- 有效的十六进制字符（0-9、a-f）
 
 ---
 
-## 3. Connection Issues
+## 3. 连接问题
 
 ### "WS error: connection failed"
 
-**Problem:** Can't connect to blockchain WebSocket.
+**问题：** 无法连接到区块链 WebSocket。
 
-**Solutions:**
-1. **Check API key:**
-   - Verify API key is correct
-   - Check if free tier limits are exceeded
-   - Try regenerating API key
+**解决方案：**
+1. **检查 API 密钥：**
+   - 验证 API 密钥是否正确
+   - 检查是否超过免费套餐限制
+   - 尝试重新生成 API 密钥
 
-2. **Check network:**
-   - Verify internet connection
-   - Try different network (mobile hotspot test)
-   - Check firewall settings
+2. **检查网络：**
+   - 验证互联网连接
+   - 尝试不同网络（移动热点测试）
+   - 检查防火墙设置
 
-3. **Try different provider:**
-   - If using Alchemy, try Chainstack (or vice versa)
-   - Some providers have regional restrictions
-
----
-
-### "WS timeout" errors
-
-**Problem:** WebSocket connection timing out.
-
-**Solutions:**
-1. **Network issues:**
-   - Check internet stability
-   - Try different network
-   - Restart router if needed
-
-2. **API provider:**
-   - Provider may be having issues
-   - Check provider status page
-   - Try different provider
-
-3. **Firewall/VPN:**
-   - Disable VPN temporarily
-   - Check firewall allows WebSocket connections
-   - Corporate networks may block WebSocket
+3. **尝试不同提供商：**
+   - 如果使用 Alchemy，尝试 Chainstack（反之亦然）
+   - 某些提供商有地区限制
 
 ---
 
-### Frequent reconnections
+### "WS timeout" 错误
 
-**Problem:** Bot keeps disconnecting and reconnecting.
+**问题：** WebSocket 连接超时。
 
-**Solutions:**
-1. **Network stability:**
-   - Use wired connection if possible
-   - Check network quality
-   - Restart router
+**解决方案：**
+1. **网络问题：**
+   - 检查互联网稳定性
+   - 尝试不同网络
+   - 如需要，重启路由器
 
-2. **API limits:**
-   - Check if hitting rate limits
-   - Upgrade API plan if needed
-   - Use different provider
+2. **API 提供商：**
+   - 提供商可能遇到问题
+   - 检查提供商状态页面
+   - 尝试不同提供商
 
-3. **Firewall:**
-   - Add exception for bot
-   - Check antivirus isn't blocking
+3. **防火墙/VPN：**
+   - 暂时禁用 VPN
+   - 检查防火墙是否允许 WebSocket 连接
+   - 企业网络可能阻止 WebSocket
 
 ---
 
-## 4. Trading Issues
+### 频繁重连
+
+**问题：** 机器人不断断开连接并重新连接。
+
+**解决方案：**
+1. **网络稳定性：**
+   - 如果可能，使用有线连接
+   - 检查网络质量
+   - 重启路由器
+
+2. **API 限制：**
+   - 检查是否达到速率限制
+   - 如需要，升级 API 计划
+   - 使用不同提供商
+
+3. **防火墙：**
+   - 为机器人添加例外
+   - 检查防病毒软件是否阻止
+
+---
+
+## 4. 交易问题
 
 ### "No trades being detected"
 
-**Problem:** Bot runs but doesn't see any whale trades.
+**问题：** 机器人运行但看不到任何鲸鱼交易。
 
-**Solutions:**
-1. **Verify whale address:**
-   - Check `TARGET_WHALE_ADDRESS` is correct
-   - Confirm whale is actively trading
-   - Whale may be inactive
+**解决方案：**
+1. **验证鲸鱼地址：**
+   - 检查 `TARGET_WHALE_ADDRESS` 是否正确
+   - 确认鲸鱼正在积极交易
+   - 鲸鱼可能不活跃
 
-2. **Check connection:**
-   - Bot should show "🔌 Connected. Subscribing..."
-   - If not, see connection issues above
+2. **检查连接：**
+   - 机器人应显示 "🔌 Connected. Subscribing..."
+   - 如果没有，请参阅上面的连接问题
 
-3. **Wait longer:**
-   - Whales don't trade constantly
-   - May take minutes/hours to see trades
-   - Check CSV log file for any activity
+3. **等待更长时间：**
+   - 鲸鱼不会持续交易
+   - 可能需要几分钟/几小时才能看到交易
+   - 检查 CSV 日志文件是否有任何活动
 
-4. **Verify monitored addresses:**
-   - Check if Polymarket contract addresses changed
-   - Bot may need update
-
----
-
-### "SKIPPED_SMALL" messages
-
-**Problem:** Bot skips trades because they're too small.
-
-**Explanation:** This is normal. Bot only copies trades above minimum threshold (default: 10 shares).
-
-**Solution:** If you want to copy smaller trades, modify `MIN_WHALE_SHARES_TO_COPY` in `src/config.rs` (requires recompiling).
+4. **验证监控的地址：**
+   - 检查 Polymarket 合约地址是否更改
+   - 机器人可能需要更新
 
 ---
 
-### "CB_BLOCKED" messages
+### "SKIPPED_SMALL" 消息
 
-**Problem:** Circuit breaker is blocking trades.
+**问题：** 机器人跳过交易，因为它们太小。
 
-**Explanation:** This is a safety feature. Bot detected potentially dangerous conditions (low liquidity, rapid trading, etc.).
+**说明：** 这是正常的。机器人只复制高于最小阈值（默认：10 股）的交易。
 
-**Solutions:**
-1. **Wait:** Circuit breaker resets after configured duration (default: 2 minutes)
+**解决方案：** 如果您想复制较小的交易，修改 `src/config.rs` 中的 `MIN_WHALE_SHARES_TO_COPY`（需要重新编译）。
 
-2. **Adjust settings:** If blocking too many trades, adjust circuit breaker settings:
+---
+
+### "CB_BLOCKED" 消息
+
+**问题：** 断路器正在阻止交易。
+
+**说明：** 这是一项安全功能。机器人检测到潜在危险条件（低流动性、快速交易等）。
+
+**解决方案：**
+1. **等待：** 断路器在配置的时长后重置（默认：2 分钟）
+
+2. **调整设置：** 如果阻止太多交易，调整断路器设置：
    ```env
-   CB_MIN_DEPTH_USD=100.0        # Lower = less strict
-   CB_CONSECUTIVE_TRIGGER=3      # Higher = less strict
-   CB_SEQUENCE_WINDOW_SECS=60    # Longer = less strict
+   CB_MIN_DEPTH_USD=100.0        # 更低 = 不太严格
+   CB_CONSECUTIVE_TRIGGER=3      # 更高 = 不太严格
+   CB_SEQUENCE_WINDOW_SECS=60    # 更长 = 不太严格
    ```
 
-3. **Check market:** May be genuinely dangerous conditions (low liquidity, manipulation)
+3. **检查市场：** 可能是真正的危险条件（低流动性、操纵）
 
 ---
 
-### "EXEC_FAIL" or order failures
+### "EXEC_FAIL" 或订单失败
 
-**Problem:** Orders fail to execute.
+**问题：** 订单无法执行。
 
-**Solutions:**
-1. **Insufficient funds:**
-   - Check wallet has enough USDC/USDC.e
-   - Check gas (MATIC) for fees
-   - Minimum recommended: $50-100 USDC
+**解决方案：**
+1. **资金不足：**
+   - 检查钱包是否有足够的 USDC/USDC.e
+   - 检查 gas（MATIC）费用
+   - 推荐最低：$50-100 USDC
 
-2. **Market conditions:**
-   - Price moved too fast
-   - Insufficient liquidity
-   - Market closed or paused
+2. **市场条件：**
+   - 价格移动太快
+   - 流动性不足
+   - 市场关闭或暂停
 
-3. **Order parameters:**
-   - Price out of valid range (0.01-0.99)
-   - Size too small or too large
-   - Invalid token ID
+3. **订单参数：**
+   - 价格超出有效范围（0.01-0.99）
+   - 规模太小或太大
+   - 无效的代币 ID
 
-4. **API issues:**
-   - Polymarket API may be having issues
-   - Check Polymarket status
-   - Try again later
-
----
-
-### "WORKER_TIMEOUT" errors
-
-**Problem:** Order processing takes too long.
-
-**Solutions:**
-1. **Network latency:**
-   - Check internet speed
-   - Use closer API endpoint if available
-
-2. **High load:**
-   - Many trades happening simultaneously
-   - System may be slow
-   - Usually resolves itself
-
-3. **API issues:**
-   - Polymarket API slow
-   - Check status page
-   - Wait and retry
-
-**Note:** Bot will retry automatically. One timeout is usually not critical.
+4. **API 问题：**
+   - Polymarket API 可能遇到问题
+   - 检查 Polymarket 状态
+   - 稍后重试
 
 ---
 
-## 5. Performance Issues
+### "WORKER_TIMEOUT" 错误
 
-### High CPU usage
+**问题：** 订单处理时间过长。
 
-**Problem:** Bot uses too much CPU.
+**解决方案：**
+1. **网络延迟：**
+   - 检查互联网速度
+   - 如果可用，使用更近的 API 端点
 
-**Solutions:**
-1. **Use release build:**
+2. **高负载：**
+   - 同时发生许多交易
+   - 系统可能很慢
+   - 通常会自动解决
+
+3. **API 问题：**
+   - Polymarket API 很慢
+   - 检查状态页面
+   - 等待并重试
+
+**注意：** 机器人会自动重试。一次超时通常不是关键问题。
+
+---
+
+## 5. 性能问题
+
+### CPU 使用率高
+
+**问题：** 机器人使用太多 CPU。
+
+**解决方案：**
+1. **使用发布构建：**
    ```bash
    cargo run --release
    ```
-   Much faster than debug build.
+   比调试构建快得多。
 
-2. **Close other programs:**
-   - Free up system resources
-   - Close unnecessary applications
+2. **关闭其他程序：**
+   - 释放系统资源
+   - 关闭不必要的应用程序
 
-3. **System resources:**
-   - Check if system meets minimum requirements
-   - May need better hardware
+3. **系统资源：**
+   - 检查系统是否满足最低要求
+   - 可能需要更好的硬件
 
-**Note:** Some CPU usage is normal, especially during active trading periods.
-
----
-
-### High memory usage
-
-**Problem:** Bot uses too much RAM.
-
-**Solutions:**
-1. **Restart periodically:**
-   - Restart bot daily/weekly
-   - Clears caches
-
-2. **Check for memory leaks:**
-   - Monitor over time
-   - Report if continuously growing
-
-3. **System resources:**
-   - May need more RAM
-   - Close other programs
-
-**Normal usage:** 50-200 MB is typical.
+**注意：** 某些 CPU 使用是正常的，尤其是在活跃交易期间。
 
 ---
 
-### Slow order execution
+### 内存使用率高
 
-**Problem:** Trades take too long to execute.
+**问题：** 机器人使用太多 RAM。
 
-**Solutions:**
-1. **Use release build:**
+**解决方案：**
+1. **定期重启：**
+   - 每天/每周重启机器人
+   - 清除缓存
+
+2. **检查内存泄漏：**
+   - 随时间监控
+   - 如果持续增长，请报告
+
+3. **系统资源：**
+   - 可能需要更多 RAM
+   - 关闭其他程序
+
+**正常使用：** 50-200 MB 是典型的。
+
+---
+
+### 订单执行缓慢
+
+**问题：** 交易执行时间过长。
+
+**解决方案：**
+1. **使用发布构建：**
    ```bash
    cargo build --release
    cargo run --release
    ```
 
-2. **Network:**
-   - Use faster internet
-   - Wired connection better than WiFi
-   - Closer to API servers
+2. **网络：**
+   - 使用更快的互联网
+   - 有线连接比 WiFi 更好
+   - 更接近 API 服务器
 
-3. **API provider:**
-   - Try different provider
-   - Paid tier may be faster than free
+3. **API 提供商：**
+   - 尝试不同提供商
+   - 付费套餐可能比免费更快
 
-**Note:** Execution time depends on blockchain speed, not just bot speed.
-
----
-
-## 6. General Errors
-
-### "File not found" errors
-
-**Problem:** Bot can't find required files.
-
-**Solutions:**
-1. **Check current directory:**
-   - Run bot from project root directory
-   - Use `cd` to navigate to correct folder
-
-2. **Check files exist:**
-   - `.env` file must exist
-   - `Cargo.toml` should be present
-   - Verify you're in correct directory
-
-3. **File permissions:**
-   - Make sure you have read/write access
-   - Check file isn't locked by another program
+**注意：** 执行时间取决于区块链速度，而不仅仅是机器人速度。
 
 ---
 
-### CSV file errors
+## 6. 一般错误
 
-**Problem:** Can't write to CSV log file.
+### "File not found" 错误
 
-**Solutions:**
-1. **Permissions:**
-   - Check write permissions in directory
-   - Run as administrator if needed (Windows)
+**问题：** 机器人找不到必需的文件。
 
-2. **File locked:**
-   - Close CSV file if open in Excel/editor
-   - Another instance may have it open
+**解决方案：**
+1. **检查当前目录：**
+   - 从项目根目录运行机器人
+   - 使用 `cd` 导航到正确的文件夹
 
-3. **Disk space:**
-   - Check available disk space
-   - Delete old CSV files if needed
+2. **检查文件是否存在：**
+   - `.env` 文件必须存在
+   - `Cargo.toml` 应该存在
+   - 验证您在正确的目录中
+
+3. **文件权限：**
+   - 确保您有读/写访问权限
+   - 检查文件是否被另一个程序锁定
 
 ---
 
-### "Panic" or crash errors
+### CSV 文件错误
 
-**Problem:** Bot crashes unexpectedly.
+**问题：** 无法写入 CSV 日志文件。
 
-**Solutions:**
-1. **Check error message:**
-   - Read full error output
-   - Look for specific error cause
+**解决方案：**
+1. **权限：**
+   - 检查目录中的写入权限
+   - 如需要，以管理员身份运行（Windows）
 
-2. **Check configuration:**
-   - Verify all `.env` values are correct
-   - Run `validate_setup` binary
+2. **文件锁定：**
+   - 如果在 Excel/编辑器中打开，关闭 CSV 文件
+   - 另一个实例可能已打开它
 
-3. **Update dependencies:**
+3. **磁盘空间：**
+   - 检查可用磁盘空间
+   - 如需要，删除旧的 CSV 文件
+
+---
+
+### "Panic" 或崩溃错误
+
+**问题：** 机器人意外崩溃。
+
+**解决方案：**
+1. **检查错误消息：**
+   - 阅读完整的错误输出
+   - 查找特定错误原因
+
+2. **检查配置：**
+   - 验证所有 `.env` 值是否正确
+   - 运行 `validate_setup` 二进制文件
+
+3. **更新依赖项：**
    ```bash
    cargo update
    cargo build --release
    ```
 
-4. **Report bug:**
-   - Save error message
-   - Note what you were doing
-   - Check GitHub issues or contact support
+4. **报告错误：**
+   - 保存错误消息
+   - 记录您在做什么
+   - 检查 GitHub issues 或联系支持
 
 ---
 
-### Strange behavior or unexpected results
+### 奇怪的行为或意外结果
 
-**Problem:** Bot doesn't behave as expected.
+**问题：** 机器人行为不符合预期。
 
-**Solutions:**
-1. **Check configuration:**
-   - Review `.env` settings
-   - Verify against `.env.example`
-   - Run config checker
+**解决方案：**
+1. **检查配置：**
+   - 查看 `.env` 设置
+   - 对照 `.env.example` 验证
+   - 运行配置检查器
 
-2. **Check logs:**
-   - Review console output
-   - Check CSV file for patterns
-   - Look for error messages
+2. **检查日志：**
+   - 查看控制台输出
+   - 检查 CSV 文件中的模式
+   - 查找错误消息
 
-3. **Reset to defaults:**
-   - Copy `.env.example` to `.env`
-   - Fill only required values
-   - Test with defaults
+3. **重置为默认值：**
+   - 将 `.env.example` 复制到 `.env`
+   - 仅填写必需值
+   - 使用默认值测试
 
-4. **Read documentation:**
-   - Review [Features Guide](04_FEATURES.md)
-   - Check [Configuration Guide](03_CONFIGURATION.md)
-   - Understand expected behavior
+4. **阅读文档：**
+   - 查看[功能指南](04_FEATURES.md)
+   - 检查[配置指南](03_CONFIGURATION.md)
+   - 了解预期行为
 
 ---
 
-## 7. Getting More Help
+## 7. 获取更多帮助
 
-If you've tried these solutions and still have issues:
+如果您已尝试这些解决方案但仍遇到问题：
 
-1. **Run config checker:**
+1. **运行配置检查器：**
    ```bash
    cargo run --release --bin validate_setup
    ```
 
-2. **Check logs:**
-   - Review console output for errors
-   - Check `matches_optimized.csv` for patterns
+2. **检查日志：**
+   - 查看控制台输出中的错误
+   - 检查 `matches_optimized.csv` 中的模式
 
-3. **Collect information:**
-   - Error messages (full text)
-   - Configuration (redact private key!)
-   - What you were doing when error occurred
-   - System information (OS, Rust version)
+3. **收集信息：**
+   - 错误消息（完整文本）
+   - 配置（编辑私钥！）
+   - 发生错误时您在做什么
+   - 系统信息（操作系统、Rust 版本）
 
-4. **Search existing issues:**
-   - Check GitHub issues
-   - Search error messages online
+4. **搜索现有问题：**
+   - 检查 GitHub issues
+   - 在线搜索错误消息
 
-5. **Ask for help:**
-   - Create detailed issue report
-   - Include all collected information
-   - Be specific about the problem
-
----
-
-## 8. Prevention Tips
-
-**Before running:**
-- ✅ Test in mock mode first
-- ✅ Verify configuration with checker
-- ✅ Start with small amounts
-- ✅ Understand how bot works
-
-**While running:**
-- ✅ Monitor console output
-- ✅ Check CSV logs regularly
-- ✅ Verify positions on Polymarket
-- ✅ Keep bot updated
-
-**Good practices:**
-- ✅ Use separate wallet for bot
-- ✅ Don't risk more than you can afford
-- ✅ Monitor regularly
-- ✅ Keep backups of configuration
-- ✅ Understand risks involved
+5. **寻求帮助：**
+   - 创建详细的问题报告
+   - 包含所有收集的信息
+   - 具体说明问题
 
 ---
 
-## 9. Common Mistakes to Avoid
+## 8. 预防提示
 
-❌ **Using main wallet:** Use separate wallet for bot  
-❌ **Wrong address format:** Check address formats carefully  
-❌ **Sharing private key:** Never share or commit private key  
-❌ **Running without testing:** Always test in mock mode first  
-❌ **Ignoring errors:** Address errors before continuing  
-❌ **Too aggressive settings:** Start conservative, adjust gradually  
-❌ **Not monitoring:** Check bot and positions regularly  
-❌ **Insufficient funds:** Make sure wallet has enough balance  
+**运行前：**
+- ✅ 首先在模拟模式下测试
+- ✅ 使用检查器验证配置
+- ✅ 从小额开始
+- ✅ 了解机器人如何工作
+
+**运行时：**
+- ✅ 监控控制台输出
+- ✅ 定期检查 CSV 日志
+- ✅ 在 Polymarket 上验证仓位
+- ✅ 保持机器人更新
+
+**良好实践：**
+- ✅ 为机器人使用单独的钱包
+- ✅ 不要冒超过您能承受的风险
+- ✅ 定期监控
+- ✅ 保留配置备份
+- ✅ 了解涉及的风险
 
 ---
 
-For additional help, see:
-- [Setup Guide](02_SETUP_GUIDE.md)
-- [Configuration Guide](03_CONFIGURATION.md)
-- [Features Guide](04_FEATURES.md)
+## 9. 常见错误避免
 
+❌ **使用主钱包：** 为机器人使用单独的钱包  
+❌ **错误的地址格式：** 仔细检查地址格式  
+❌ **分享私钥：** 永远不要分享或提交私钥  
+❌ **不测试就运行：** 始终首先在模拟模式下测试  
+❌ **忽略错误：** 在继续之前解决错误  
+❌ **设置过于激进：** 从保守开始，逐渐调整  
+❌ **不监控：** 定期检查机器人和仓位  
+❌ **资金不足：** 确保钱包有足够的余额  
+
+---
+
+如需其他帮助，请参阅：
+- [设置指南](02_SETUP_GUIDE.md)
+- [配置指南](03_CONFIGURATION.md)
+- [功能指南](04_FEATURES.md)

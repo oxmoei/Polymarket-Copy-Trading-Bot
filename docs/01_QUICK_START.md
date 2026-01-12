@@ -1,102 +1,101 @@
-# Quick Start Guide
+# 快速开始指南
 
-The fastest way to get the bot running (5 minutes).
+最快让机器人运行起来的方法（5 分钟）。
 
-## Table of Contents
+## 目录
 
-1. [Prerequisites Checklist](#1-prerequisites-checklist)
-2. [5-Minute Setup](#2-5-minute-setup)
-3. [Windows Users](#3-windows-users)
-4. [Common First-Time Issues](#4-common-first-time-issues)
-5. [Need More Help?](#5-need-more-help)
-6. [Safety Reminders](#6-safety-reminders)
+1. [前置条件检查清单](#1-前置条件检查清单)
+2. [5 分钟设置](#2-5-分钟设置)
+3. [Windows 用户](#3-windows-用户)
+4. [常见首次使用问题](#4-常见首次使用问题)
+5. [需要更多帮助？](#5-需要更多帮助)
+6. [安全提醒](#6-安全提醒)
 
 ---
 
-## 1. Prerequisites Checklist
+## 1. 前置条件检查清单
 
-- [ ] Rust installed (https://rustup.rs/)
-- [ ] Polymarket account created
-- [ ] MetaMask wallet with USDC on Polygon
-- [ ] Alchemy account (free) - https://www.alchemy.com/
+- [ ] 已安装 Rust (https://rustup.rs/)
+- [ ] 已创建 Polymarket 账户
+- [ ] MetaMask 钱包在 Polygon 上有 USDC
+- [ ] Alchemy 账户（免费）- https://www.alchemy.com/
 
-## 2. 5-Minute Setup
+## 2. 5 分钟设置
 
-### 2.1 Step 1: Setup Environment (1 minute)
+### 2.1 步骤 1：设置环境（1 分钟）
 
 ```bash
-# Copy example config
+# 复制示例配置
 cp .env.example .env  # Linux/macOS
-# OR
+# 或
 copy .env.example .env  # Windows
 
-# Edit .env file - fill in these 4 values:
-# - PRIVATE_KEY (from MetaMask: Account Details → Export Private Key)
-# - FUNDER_ADDRESS (your wallet address)
-# - TARGET_WHALE_ADDRESS (whale to copy - from Polymarket leaderboard)
-# - ALCHEMY_API_KEY (from https://www.alchemy.com/)
+# 编辑 .env 文件 - 填写这 4 个值：
+# - PRIVATE_KEY (从 MetaMask：账户详情 → 导出私钥)
+# - FUNDER_ADDRESS (您的钱包地址)
+# - TARGET_WHALE_ADDRESS (要复制的鲸鱼 - 从 Polymarket 排行榜)
+# - ALCHEMY_API_KEY (从 https://www.alchemy.com/)
 ```
 
-### 2.2 Step 2: Validate Config (30 seconds)
+### 2.2 步骤 2：验证配置（30 秒）
 
 ```bash
 cargo run --release --bin validate_setup
 ```
 
-Fix any errors it reports.
+修复它报告的任何错误。
 
-### 2.3 Step 3: Test in Mock Mode (1 minute)
+### 2.3 步骤 3：在模拟模式下测试（1 分钟）
 
 ```bash
-# In .env, set:
+# 在 .env 中设置：
 # ENABLE_TRADING=false
 # MOCK_TRADING=true
 
 cargo run --release
 ```
 
-Watch for connection and trade simulation messages.
+观察连接和交易模拟消息。
 
-### 2.4 Step 4: Run for Real (when ready)
+### 2.4 步骤 4：真实运行（准备就绪时）
 
 ```bash
-# In .env, set:
+# 在 .env 中设置：
 # ENABLE_TRADING=true
 # MOCK_TRADING=false
 
 cargo run --release
-# OR double-click run.bat (Windows)
+# 或双击 run.bat (Windows)
 ```
 
-## 3. Windows Users
+## 3. Windows 用户
 
-Just double-click `run.bat` after setting up `.env`!
+设置好 `.env` 后，只需双击 `run.bat`！
 
-## 4. Common First-Time Issues
+## 4. 常见首次使用问题
 
-**"rustc not found"** → Install Rust from https://rustup.rs/ and restart terminal
+**"rustc not found"** → 从 https://rustup.rs/ 安装 Rust 并重启终端
 
-**".env file not found"** → Copy `.env.example` to `.env`
+**".env file not found"** → 将 `.env.example` 复制为 `.env`
 
-**"PRIVATE_KEY required"** → Open `.env`, fill in your private key (remove `0x` if present)
+**"PRIVATE_KEY required"** → 打开 `.env`，填写您的私钥（如果存在 `0x` 前缀则删除）
 
-**"API key required"** → Get free key from https://www.alchemy.com/, add to `.env`
+**"API key required"** → 从 https://www.alchemy.com/ 获取免费密钥，添加到 `.env`
 
-## 5. Need More Help?
+## 5. 需要更多帮助？
 
-- **Detailed Setup:** See [02_SETUP_GUIDE.md](02_SETUP_GUIDE.md)
-- **Configuration Options:** See [03_CONFIGURATION.md](03_CONFIGURATION.md)
-- **Problems?** See [06_TROUBLESHOOTING.md](06_TROUBLESHOOTING.md)
-- **How It Works:** See [04_FEATURES.md](04_FEATURES.md)
-- **Strategy Logic:** See [05_STRATEGY.md](05_STRATEGY.md)
+- **详细设置：** 查看 [02_SETUP_GUIDE.md](02_SETUP_GUIDE.md)
+- **配置选项：** 查看 [03_CONFIGURATION.md](03_CONFIGURATION.md)
+- **遇到问题？** 查看 [06_TROUBLESHOOTING.md](06_TROUBLESHOOTING.md)
+- **工作原理：** 查看 [04_FEATURES.md](04_FEATURES.md)
+- **策略逻辑：** 查看 [05_STRATEGY.md](05_STRATEGY.md)
 
-## 6. Safety Reminders
+## 6. 安全提醒
 
-⚠️ **Before running with real money:**
-- Test in mock mode first (`MOCK_TRADING=true`)
-- Start with small amounts
-- Monitor your positions
-- Understand the risks
+⚠️ **在使用真实资金运行之前：**
+- 首先在模拟模式下测试（`MOCK_TRADING=true`）
+- 从小额开始
+- 监控您的仓位
+- 了解风险
 
-✅ **Your `.env` file contains secrets** - never share it or commit to git!
-
+✅ **您的 `.env` 文件包含机密信息** - 永远不要分享它或提交到 git！

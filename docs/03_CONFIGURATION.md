@@ -1,270 +1,270 @@
-# Configuration Guide
+# 配置指南
 
-Complete reference for all bot configuration options.
+机器人所有配置选项的完整参考。
 
-## Table of Contents
+## 目录
 
-1. [Required Settings](#1-required-settings)
-2. [Trading Settings](#2-trading-settings)
-3. [Risk Management Settings](#3-risk-management-settings-circuit-breaker)
-4. [Advanced Settings](#4-advanced-settings)
-5. [Configuration Examples](#5-configuration-examples)
-6. [Validation](#6-validation)
-7. [Troubleshooting Configuration](#7-troubleshooting-configuration)
+1. [必需设置](#1-必需设置)
+2. [交易设置](#2-交易设置)
+3. [风险管理设置](#3-风险管理设置断路器)
+4. [高级设置](#4-高级设置)
+5. [配置示例](#5-配置示例)
+6. [验证](#6-验证)
+7. [配置故障排除](#7-配置故障排除)
 
 ---
 
-## 1. Required Settings
+## 1. 必需设置
 
-These must be set for the bot to work. Without these, the bot will not start.
+这些必须设置才能让机器人工作。没有这些，机器人将无法启动。
 
 ### 1.1 PRIVATE_KEY
 
-**Type:** String (64 hex characters)  
-**Format:** No `0x` prefix  
-**Example:** `0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef`
+**类型：** 字符串（64 个十六进制字符）  
+**格式：** 无 `0x` 前缀  
+**示例：** `0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef`
 
-Your wallet's private key. This is used to sign transactions.
+您的钱包私钥。用于签署交易。
 
-**⚠️ Security Warning:**
-- Never share this with anyone
-- Never commit to git (`.env` is already in `.gitignore`)
-- Store securely (password manager recommended)
-- Use a separate wallet for bot trading (not your main wallet)
+**⚠️ 安全警告：**
+- 永远不要与任何人分享
+- 永远不要提交到 git（`.env` 已在 `.gitignore` 中）
+- 安全存储（推荐使用密码管理器）
+- 为机器人交易使用单独的钱包（不是您的主钱包）
 
-**How to get:**
-- MetaMask: Account Details → Export Private Key
-- Other wallets: Check wallet documentation for export method
+**如何获取：**
+- MetaMask：账户详情 → 导出私钥
+- 其他钱包：查看钱包文档了解导出方法
 
 ---
 
 ### 1.2 FUNDER_ADDRESS
 
-**Type:** String (40 hex characters)  
-**Format:** Can include or exclude `0x` prefix  
-**Example:** `0x1234567890123456789012345678901234567890` or `1234567890123456789012345678901234567890`
+**类型：** 字符串（40 个十六进制字符）  
+**格式：** 可以包含或不包含 `0x` 前缀  
+**示例：** `0x1234567890123456789012345678901234567890` 或 `1234567890123456789012345678901234567890`
 
-Your wallet address. Must match the wallet from `PRIVATE_KEY`.
+您的钱包地址。必须与 `PRIVATE_KEY` 对应的钱包匹配。
 
-**How to get:**
-- MetaMask: Copy address from account (top of extension)
-- Other wallets: Usually displayed prominently in wallet UI
+**如何获取：**
+- MetaMask：从账户复制地址（扩展顶部）
+- 其他钱包：通常在钱包界面中显著显示
 
-**Important:** Make sure this wallet has:
-- USDC or USDC.e tokens on Polygon
-- Enough MATIC for gas fees (0.01-0.1 MATIC is usually enough)
+**重要提示：** 确保此钱包有：
+- Polygon 上的 USDC 或 USDC.e 代币
+- 足够的 MATIC 用于 gas 费用（通常 0.01-0.1 MATIC 足够）
 
 ---
 
 ### 1.3 TARGET_WHALE_ADDRESS
 
-**Type:** String (40 hex characters)  
-**Format:** No `0x` prefix  
-**Example:** `204f72f35326db932158cba6adff0b9a1da95e14`
+**类型：** 字符串（40 个十六进制字符）  
+**格式：** 无 `0x` 前缀  
+**示例：** `204f72f35326db932158cba6adff0b9a1da95e14`
 
-The wallet address of the trader you want to copy.
+您要复制的交易者的钱包地址。
 
-**Finding whales:**
-- Polymarket leaderboards
-- Recent winners on large markets
-- Social media/communities
+**查找鲸鱼：**
+- Polymarket 排行榜
+- 大市场的最近获胜者
+- 社交媒体/社区
 
-**Verification:**
-- Check their trading history
-- Look for consistent performance
-- Start with small amounts to test
-
----
-
-### 1.4 ALCHEMY_API_KEY (or CHAINSTACK_API_KEY)
-
-**Type:** String  
-**Example:** `abc123xyz789def456`
-
-**Choose ONE provider:**
-
-##### 1.4.1 Option 1: Alchemy (Recommended)
-
-**Setting:** `ALCHEMY_API_KEY`
-
-**Getting an API key:**
-1. Sign up at https://www.alchemy.com/
-2. Create app (Polygon Mainnet)
-3. Copy API key from dashboard
-
-**Free tier:** 300M compute units/month (sufficient for this bot)
-
-##### 1.4.2 Option 2: Chainstack
-
-**Setting:** `CHAINSTACK_API_KEY`
-
-**Getting an API key:**
-1. Sign up at https://chainstack.com/
-2. Create project and Polygon node
-3. Extract key from WebSocket URL
-
-**Note:** If both are set, `ALCHEMY_API_KEY` takes priority.
+**验证：**
+- 检查他们的交易历史
+- 寻找一致的表现
+- 从小额开始测试
 
 ---
 
-## 2. Trading Settings
+### 1.4 ALCHEMY_API_KEY（或 CHAINSTACK_API_KEY）
+
+**类型：** 字符串  
+**示例：** `abc123xyz789def456`
+
+**选择一个提供商：**
+
+##### 1.4.1 选项 1：Alchemy（推荐）
+
+**设置：** `ALCHEMY_API_KEY`
+
+**获取 API 密钥：**
+1. 在 https://www.alchemy.com/ 注册
+2. 创建应用（Polygon Mainnet）
+3. 从仪表板复制 API 密钥
+
+**免费套餐：** 每月 300M 计算单位（对这个机器人来说足够）
+
+##### 1.4.2 选项 2：Chainstack
+
+**设置：** `CHAINSTACK_API_KEY`
+
+**获取 API 密钥：**
+1. 在 https://chainstack.com/ 注册
+2. 创建项目和 Polygon 节点
+3. 从 WebSocket URL 中提取密钥
+
+**注意：** 如果两者都设置了，`ALCHEMY_API_KEY` 优先。
+
+---
+
+## 2. 交易设置
 
 ### 2.1 ENABLE_TRADING
 
-**Type:** Boolean  
-**Default:** `true`  
-**Values:** `true`, `false`, `1`, `0` (case-insensitive)
+**类型：** 布尔值  
+**默认值：** `true`  
+**值：** `true`、`false`、`1`、`0`（不区分大小写）
 
-Whether the bot should actually place trades.
+机器人是否应该实际下订单。
 
-- `true` / `1`: Bot places real orders
-- `false` / `0`: Bot only monitors (no trades)
+- `true` / `1`：机器人下真实订单
+- `false` / `0`：机器人仅监控（不下订单）
 
-**Recommended:** Set to `false` for initial testing.
+**推荐：** 初始测试时设置为 `false`。
 
 ---
 
 ### 2.2 MOCK_TRADING
 
-**Type:** Boolean  
-**Default:** `false`  
-**Values:** `true`, `false`, `1`, `0` (case-insensitive)
+**类型：** 布尔值  
+**默认值：** `false`  
+**值：** `true`、`false`、`1`、`0`（不区分大小写）
 
-Simulates trades without actually executing them. Useful for testing.
+模拟交易而不实际执行。用于测试很有用。
 
-- `true` / `1`: Shows what bot would do (no real orders)
-- `false` / `0`: Real trading mode
+- `true` / `1`：显示机器人会做什么（无真实订单）
+- `false` / `0`：真实交易模式
 
-**Recommended:** Set to `true` for first runs to verify everything works.
+**推荐：** 首次运行时设置为 `true` 以验证一切正常。
 
-**Note:** If `ENABLE_TRADING=false`, `MOCK_TRADING` has no effect.
+**注意：** 如果 `ENABLE_TRADING=false`，`MOCK_TRADING` 无效。
 
 ---
 
-## 3. Risk Management Settings (Circuit Breaker)
+## 3. 风险管理设置（断路器）
 
-Circuit breakers protect you from copying trades in dangerous market conditions (low liquidity, manipulation, etc.).
+断路器保护您免受在危险市场条件下（低流动性、操纵等）复制交易的风险。
 
 ### 3.1 CB_LARGE_TRADE_SHARES
 
-**Type:** Float  
-**Default:** `1500.0`  
-**Unit:** Shares
+**类型：** 浮点数  
+**默认值：** `1500.0`  
+**单位：** 股数
 
-Minimum trade size that triggers circuit breaker analysis. Trades below this size skip circuit breaker checks (faster execution for small trades).
+触发断路器分析的最小交易规模。低于此规模的交易跳过断路器检查（小交易执行更快）。
 
-**Recommendation:** Default is usually fine. Increase if you want more protection, decrease if you want faster execution on medium trades.
+**推荐：** 默认值通常就足够了。如果您想要更多保护，可以增加；如果您想要中等交易执行更快，可以减少。
 
 ---
 
 ### 3.2 CB_CONSECUTIVE_TRIGGER
 
-**Type:** Integer  
-**Default:** `2`  
-**Range:** 1-10
+**类型：** 整数  
+**默认值：** `2`  
+**范围：** 1-10
 
-Number of consecutive large trades (within the time window) that trigger a circuit breaker book depth check.
+触发断路器订单簿深度检查的连续大额交易数量（在时间窗口内）。
 
-**Example:** With default `2`, if 2 or more large trades happen within `CB_SEQUENCE_WINDOW_SECS`, the bot checks order book depth before copying.
+**示例：** 使用默认值 `2`，如果在 `CB_SEQUENCE_WINDOW_SECS` 内发生 2 个或更多大额交易，机器人在复制之前检查订单簿深度。
 
-**Recommendation:** 
-- `1` = Most conservative (checks on every large trade)
-- `2` = Balanced (default)
-- `3+` = More aggressive (only checks after multiple large trades)
+**推荐：**
+- `1` = 最保守（每次大额交易都检查）
+- `2` = 平衡（默认）
+- `3+` = 更激进（仅在多次大额交易后检查）
 
 ---
 
 ### 3.3 CB_SEQUENCE_WINDOW_SECS
 
-**Type:** Integer  
-**Default:** `30`  
-**Unit:** Seconds  
-**Range:** 10-300
+**类型：** 整数  
+**默认值：** `30`  
+**单位：** 秒  
+**范围：** 10-300
 
-Time window to check for consecutive large trades.
+检查连续大额交易的时间窗口。
 
-**Example:** With default `30`, the bot looks back 30 seconds to count consecutive large trades.
+**示例：** 使用默认值 `30`，机器人回看 30 秒来计算连续大额交易。
 
-**Recommendation:** 
-- `10-20` = More sensitive (detects rapid sequences quickly)
-- `30` = Balanced (default)
-- `60+` = Less sensitive (only triggers on longer sequences)
+**推荐：**
+- `10-20` = 更敏感（快速检测快速序列）
+- `30` = 平衡（默认）
+- `60+` = 不太敏感（仅在较长序列时触发）
 
 ---
 
 ### 3.4 CB_MIN_DEPTH_USD
 
-**Type:** Float  
-**Default:** `200.0`  
-**Unit:** USD
+**类型：** 浮点数  
+**默认值：** `200.0`  
+**单位：** USD
 
-Minimum order book depth (liquidity) required beyond the whale's price. If depth is lower, the circuit breaker blocks the trade.
+鲸鱼价格之外所需的最小订单簿深度（流动性）。如果深度较低，断路器会阻止交易。
 
-**What it means:** When you want to buy at $0.50, this checks if there's at least $200 worth of sell orders available at prices up to $0.51 (whale price + buffer).
+**含义：** 当您想以 $0.50 买入时，这会检查在价格高达 $0.51（鲸鱼价格 + 缓冲）时是否有至少 $200 的卖单可用。
 
-**Recommendation:**
-- `100.0` = Less conservative (allows trades in thinner markets)
-- `200.0` = Balanced (default)
-- `500.0+` = Very conservative (only trades in liquid markets)
+**推荐：**
+- `100.0` = 不太保守（允许在较薄的市场中交易）
+- `200.0` = 平衡（默认）
+- `500.0+` = 非常保守（仅在流动性市场中交易）
 
 ---
 
 ### 3.5 CB_TRIP_DURATION_SECS
 
-**Type:** Integer  
-**Default:** `120`  
-**Unit:** Seconds  
-**Range:** 30-600
+**类型：** 整数  
+**默认值：** `120`  
+**单位：** 秒  
+**范围：** 30-600
 
-How long to block trades after circuit breaker trips.
+断路器触发后阻止交易的时间。
 
-**What it means:** If circuit breaker detects dangerous conditions, it stops copying trades for this duration.
+**含义：** 如果断路器检测到危险条件，它会在此时长内停止复制交易。
 
-**Recommendation:**
-- `60` = Quick recovery (resumes trading faster)
-- `120` = Balanced (default, 2 minutes)
-- `300+` = Very conservative (waits 5+ minutes after trip)
-
----
-
-## 4. Advanced Settings
-
-These are set in code but can be modified by editing `src/config.rs`. Only change if you understand what you're doing.
-
-### Trading Parameters (in code)
-
-**Location:** `src/config.rs`
-
-- `SCALING_RATIO` (default: `0.02` = 2%)
-  - Your position size as fraction of whale size
-  - `0.01` = 1%, `0.05` = 5%, etc.
-
-- `MIN_WHALE_SHARES_TO_COPY` (default: `10.0`)
-  - Minimum whale trade size to copy
-  - Trades below this are ignored
-
-- `MIN_CASH_VALUE` (default: `1.01`)
-  - Minimum USD value for your orders
-  - Prevents dust orders
-
-### Execution Tiers (in code)
-
-The bot uses different strategies based on trade size:
-
-| Whale Shares | Price Buffer | Size Multiplier | Order Type |
-|--------------|--------------|-----------------|------------|
-| 4000+        | 0.01         | 1.25x           | FAK        |
-| 2000-3999    | 0.01         | 1.0x            | FAK        |
-| 1000-1999    | 0.00         | 1.0x            | FAK        |
-| <1000        | 0.00         | 1.0x            | FAK        |
-
-**Modification:** Edit `EXECUTION_TIERS` in `src/config.rs` (requires recompiling).
+**推荐：**
+- `60` = 快速恢复（更快恢复交易）
+- `120` = 平衡（默认，2 分钟）
+- `300+` = 非常保守（触发后等待 5+ 分钟）
 
 ---
 
-## 5. Configuration Examples
+## 4. 高级设置
 
-### 5.1 Example 1: Beginner (Safe Testing)
+这些在代码中设置，但可以通过编辑 `src/config.rs` 进行修改。只有在您了解自己在做什么时才更改。
+
+### 交易参数（在代码中）
+
+**位置：** `src/config.rs`
+
+- `SCALING_RATIO`（默认：`0.02` = 2%）
+  - 您的仓位规模相对于鲸鱼规模的比例
+  - `0.01` = 1%，`0.05` = 5%，等等
+
+- `MIN_WHALE_SHARES_TO_COPY`（默认：`10.0`）
+  - 要复制的最小鲸鱼交易规模
+  - 低于此值的交易将被忽略
+
+- `MIN_CASH_VALUE`（默认：`1.01`）
+  - 您的订单的最小 USD 价值
+  - 防止灰尘订单
+
+### 执行层级（在代码中）
+
+机器人根据交易规模使用不同的策略：
+
+| 鲸鱼股数 | 价格缓冲 | 规模乘数 | 订单类型 |
+|----------|----------|----------|----------|
+| 4000+    | 0.01     | 1.25x    | FAK      |
+| 2000-3999| 0.01     | 1.0x     | FAK      |
+| 1000-1999| 0.00     | 1.0x     | FAK      |
+| <1000    | 0.00     | 1.0x     | FAK      |
+
+**修改：** 编辑 `src/config.rs` 中的 `EXECUTION_TIERS`（需要重新编译）。
+
+---
+
+## 5. 配置示例
+
+### 5.1 示例 1：初学者（安全测试）
 
 ```env
 PRIVATE_KEY=your_key_here
@@ -272,11 +272,11 @@ FUNDER_ADDRESS=your_address_here
 TARGET_WHALE_ADDRESS=whale_address_here
 ALCHEMY_API_KEY=your_api_key_here
 
-# Safety first
+# 安全第一
 ENABLE_TRADING=false
 MOCK_TRADING=true
 
-# Default circuit breaker settings (already safe)
+# 默认断路器设置（已经安全）
 CB_LARGE_TRADE_SHARES=1500.0
 CB_CONSECUTIVE_TRIGGER=2
 CB_SEQUENCE_WINDOW_SECS=30
@@ -284,7 +284,7 @@ CB_MIN_DEPTH_USD=200.0
 CB_TRIP_DURATION_SECS=120
 ```
 
-### 5.2 Example 2: Conservative Trading
+### 5.2 示例 2：保守交易
 
 ```env
 PRIVATE_KEY=your_key_here
@@ -295,15 +295,15 @@ ALCHEMY_API_KEY=your_api_key_here
 ENABLE_TRADING=true
 MOCK_TRADING=false
 
-# More conservative circuit breaker
-CB_LARGE_TRADE_SHARES=1000.0      # Check more trades
-CB_CONSECUTIVE_TRIGGER=1          # Check every large trade
-CB_SEQUENCE_WINDOW_SECS=20        # Faster detection
-CB_MIN_DEPTH_USD=500.0            # Only liquid markets
-CB_TRIP_DURATION_SECS=300         # Wait 5 minutes after trip
+# 更保守的断路器
+CB_LARGE_TRADE_SHARES=1000.0      # 检查更多交易
+CB_CONSECUTIVE_TRIGGER=1          # 每次大额交易都检查
+CB_SEQUENCE_WINDOW_SECS=20        # 更快检测
+CB_MIN_DEPTH_USD=500.0            # 仅流动性市场
+CB_TRIP_DURATION_SECS=300         # 触发后等待 5 分钟
 ```
 
-### 5.3 Example 3: Aggressive Trading
+### 5.3 示例 3：激进交易
 
 ```env
 PRIVATE_KEY=your_key_here
@@ -314,51 +314,50 @@ ALCHEMY_API_KEY=your_api_key_here
 ENABLE_TRADING=true
 MOCK_TRADING=false
 
-# Less conservative circuit breaker
-CB_LARGE_TRADE_SHARES=2000.0      # Only check very large trades
-CB_CONSECUTIVE_TRIGGER=3          # Only check after 3+ trades
-CB_SEQUENCE_WINDOW_SECS=60        # Longer window
-CB_MIN_DEPTH_USD=100.0            # Allow thinner markets
-CB_TRIP_DURATION_SECS=60          # Quick recovery
+# 不太保守的断路器
+CB_LARGE_TRADE_SHARES=2000.0      # 仅检查非常大的交易
+CB_CONSECUTIVE_TRIGGER=3          # 仅在 3+ 交易后检查
+CB_SEQUENCE_WINDOW_SECS=60        # 更长的窗口
+CB_MIN_DEPTH_USD=100.0            # 允许较薄的市场
+CB_TRIP_DURATION_SECS=60          # 快速恢复
 ```
 
 ---
 
-## 6. Validation
+## 6. 验证
 
-After editing your `.env`, validate it:
+编辑 `.env` 后，验证它：
 
 ```bash
 cargo run --release --bin validate_setup
 ```
 
-This checks:
-- ✅ All required fields are set
-- ✅ Address formats are correct
-- ✅ Boolean values are valid
-- ✅ Numeric values are valid numbers
-- ✅ No obvious errors
+这会检查：
+- ✅ 所有必需字段都已设置
+- ✅ 地址格式正确
+- ✅ 布尔值有效
+- ✅ 数值是有效数字
+- ✅ 没有明显错误
 
 ---
 
-## 7. Troubleshooting Configuration
+## 7. 配置故障排除
 
-**Problem:** Bot won't start, says "missing required env var"
-- **Solution:** Check that all required fields in `.env` are filled (no "here" placeholders)
+**问题：** 机器人无法启动，提示"缺少必需的 env var"
+- **解决方案：** 检查 `.env` 中的所有必需字段是否已填写（没有"here"占位符）
 
-**Problem:** "Invalid address format" error
-- **Solution:** 
-  - Private key: Must be exactly 64 hex characters, no `0x`
-  - Addresses: Must be exactly 40 hex characters (with or without `0x` for FUNDER_ADDRESS, no `0x` for TARGET_WHALE_ADDRESS)
+**问题：** "无效地址格式"错误
+- **解决方案：**
+  - 私钥：必须恰好是 64 个十六进制字符，无 `0x`
+  - 地址：必须恰好是 40 个十六进制字符（FUNDER_ADDRESS 可以有或没有 `0x`，TARGET_WHALE_ADDRESS 无 `0x`）
 
-**Problem:** "API key invalid" or connection errors
-- **Solution:**
-  - Verify API key is correct (copy-paste carefully)
-  - Check if you're using free tier limits
-  - Try regenerating API key
+**问题：** "API 密钥无效"或连接错误
+- **解决方案：**
+  - 验证 API 密钥是否正确（仔细复制粘贴）
+  - 检查是否使用了免费套餐限制
+  - 尝试重新生成 API 密钥
 
-**Problem:** Circuit breaker blocks all trades
-- **Solution:** Adjust `CB_MIN_DEPTH_USD` lower or `CB_CONSECUTIVE_TRIGGER` higher
+**问题：** 断路器阻止所有交易
+- **解决方案：** 将 `CB_MIN_DEPTH_USD` 调低或 `CB_CONSECUTIVE_TRIGGER` 调高
 
-For more help, see [Troubleshooting Guide](06_TROUBLESHOOTING.md).
-
+更多帮助，请参阅[故障排除指南](06_TROUBLESHOOTING.md)。
