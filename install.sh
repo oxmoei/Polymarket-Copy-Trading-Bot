@@ -68,6 +68,8 @@ install_dependencies
 install_rust
 if [ "$OS_TYPE" = "Linux" ]; then
     PIP_INSTALL="pip3 install --break-system-packages"
+elif [ "$OS_TYPE" = "Darwin" ]; then
+    PIP_INSTALL="pip3 install --user --break-system-packages"
 else
     PIP_INSTALL="pip3 install"
 fi
