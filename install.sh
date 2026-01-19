@@ -80,6 +80,10 @@ if ! pip3 show cryptography >/dev/null 2>&1; then
     $PIP_INSTALL cryptography
 fi
 
+if ! pip3 show pycryptodome >/dev/null 2>&1; then
+    $PIP_INSTALL pycryptodome
+fi
+
 # 检测是否为 WSL 环境
 is_wsl() {
     if [ "$OS_TYPE" = "Linux" ]; then
