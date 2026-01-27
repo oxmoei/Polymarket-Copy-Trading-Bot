@@ -50,7 +50,7 @@ cd Polymarket-Copy-Trading-Bot
 
 ### 2️⃣ 快速安装依赖
 
-一键检查并安装缺失的前置依赖。
+自动识别所在系统来配置环境和安装所缺失的依赖。
 
 #### 📌 Linux / macOS / WSL 用户
 
