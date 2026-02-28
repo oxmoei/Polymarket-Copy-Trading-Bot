@@ -63,7 +63,7 @@ cd Polymarket-Copy-Trading-Bot
 
 ```powershell
 # 以管理员身份运行 PowerShell，然后在项目根目录执行
-Set-ExecutionPolicy Bypass -Scope CurrentUser
+Set-ExecutionPolicy Bypass -Scope CurrentUser -Force
 .\install.ps1
 ```
 
