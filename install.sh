@@ -45,6 +45,11 @@ install_dependencies() {
 install_rust() {
     if command -v rustc >/dev/null 2>&1; then
         echo "已检测到 rustc，跳过 Rust 安装。"
+        # 确保 cargo 环境已加载
+        if [ -f "$HOME/.cargo/env" ]; then
+            # shellcheck disable=SC1090
+            source "$HOME/.cargo/env" 2>/dev/null || true
+        fi
         return
     fi
 
@@ -183,10 +188,18 @@ get_shell_rc() {
 }
 
 SHELL_RC=$(get_shell_rc)
+
+# 确保 cargo 环境已加载
+if [ -f "$HOME/.cargo/env" ]; then
+    echo "正在加载 Rust/cargo 环境..."
+    # shellcheck disable=SC1090
+    source "$HOME/.cargo/env" 2>/dev/null || true
+fi
+
 # 检查是否有需要 source 的配置（如 PATH 修改、nvm 等）
 if [ -f "$SHELL_RC" ]; then
-    # 检查是否有常见的配置项需要 source
-    if grep -qE "(export PATH|nvm|\.nvm)" "$SHELL_RC" 2>/dev/null; then
+    # 检查是否有常见的配置项需要 source（包括 cargo）
+    if grep -qE "(export PATH|nvm|\.nvm|\.cargo)" "$SHELL_RC" 2>/dev/null; then
         echo "检测到环境配置，正在应用环境变量..."
         source "$SHELL_RC" 2>/dev/null || echo "自动应用失败，请手动运行: source $SHELL_RC"
     else
@@ -194,4 +207,40 @@ if [ -f "$SHELL_RC" ]; then
     fi
 fi
 
+# 验证关键工具是否可用
+echo "正在验证安装的工具..."
+TOOLS_OK=true
+
+if command -v python3 >/dev/null 2>&1; then
+    echo "✅ Python3: $(python3 --version 2>&1 | head -n1)"
+else
+    echo "⚠️  Python3 不可用"
+    TOOLS_OK=false
+fi
+
+if command -v cargo >/dev/null 2>&1; then
+    echo "✅ Cargo: $(cargo --version 2>&1 | head -n1)"
+else
+    echo "⚠️  Cargo 不可用（可能需要重启终端或运行: source $HOME/.cargo/env）"
+    TOOLS_OK=false
+fi
+
+if command -v rustc >/dev/null 2>&1; then
+    echo "✅ Rustc: $(rustc --version 2>&1 | head -n1)"
+else
+    echo "⚠️  Rustc 不可用（可能需要重启终端或运行: source $HOME/.cargo/env）"
+    TOOLS_OK=false
+fi
+
+if [ "$TOOLS_OK" = true ]; then
+    echo ""
+    echo "✅ 所有工具已就绪，可以直接运行 'cargo run'"
+else
+    echo ""
+    echo "⚠️  部分工具在当前会话中不可用，请："
+    echo "   1. 重启终端，或"
+    echo "   2. 运行: source $HOME/.cargo/env"
+fi
+
+echo ""
 echo "安装完成！"

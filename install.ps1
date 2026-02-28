@@ -27,6 +27,11 @@ function Install-Rust {
         $cargoBin = Join-Path $env:USERPROFILE '.cargo\bin'
         if (Test-Path $cargoBin) {
             $env:Path = "$cargoBin;$env:Path"
+            # Add to user PATH permanently
+            $userPath = [System.Environment]::GetEnvironmentVariable('Path', 'User')
+            if ($userPath -notlike "*$cargoBin*") {
+                [System.Environment]::SetEnvironmentVariable('Path', "$userPath;$cargoBin", 'User')
+            }
         }
     } catch {
         Write-Output "Rust installation failed: $_"
@@ -151,8 +156,16 @@ try {
     # Refresh environment variables for current session
     $env:Path = [System.Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path', 'User')
     
+    # Add cargo bin to PATH if Rust was installed
+    $cargoBin = Join-Path $env:USERPROFILE '.cargo\bin'
+    if (Test-Path $cargoBin) {
+        if ($env:Path -notlike "*$cargoBin*") {
+            $env:Path = "$cargoBin;$env:Path"
+        }
+    }
+    
     # Verify key tools are available
-    $tools = @('python')
+    $tools = @('python', 'cargo', 'rustc')
     foreach ($tool in $tools) {
         try {
             $version = & $tool --version 2>&1 | Out-String
